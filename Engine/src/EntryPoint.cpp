@@ -1,5 +1,7 @@
 #include <iostream>
 
+#include "Platform/Platform.h"
+
 #include "Utilities/Logger.h"
 
 int main() {

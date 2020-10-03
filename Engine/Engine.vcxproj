@@ -98,6 +98,8 @@
     <ClCompile Include="src\Utilities\Logger.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Core\Base.h" />
+    <ClInclude Include="src\Platform\Platform.h" />
     <ClInclude Include="src\Utilities\Logger.h" />
     <ClInclude Include="src\Utilities\Types.h" />
   </ItemGroup>

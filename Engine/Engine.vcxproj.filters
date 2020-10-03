@@ -7,5 +7,7 @@
   <ItemGroup>
     <ClInclude Include="src\Utilities\Types.h" />
     <ClInclude Include="src\Utilities\Logger.h" />
+    <ClInclude Include="src\Core\Base.h" />
+    <ClInclude Include="src\Platform\Platform.h" />
   </ItemGroup>
 </Project>
