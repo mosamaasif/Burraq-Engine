@@ -1,13 +1,24 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="src\EntryPoint.cpp" />
-    <ClCompile Include="src\Utilities\Logger.cpp" />
+    <ClCompile Include="Src\RTX\Application\EntryPoint.cpp" />
+    <ClCompile Include="Src\RTX\RTX.cpp" />
+    <ClCompile Include="Src\RTX\Logger\ConsoleSink.cpp" />
+    <ClCompile Include="Src\RTX\Logger\FileSink.cpp" />
+    <ClCompile Include="Src\RTX\Logger\Formatter.cpp" />
+    <ClCompile Include="Src\RTX\Logger\Logger.cpp" />
+    <ClCompile Include="Src\RTX\Logger\Log.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\Utilities\Types.h" />
-    <ClInclude Include="src\Utilities\Logger.h" />
-    <ClInclude Include="src\Core\Base.h" />
-    <ClInclude Include="src\Platform\Platform.h" />
+    <ClInclude Include="Src\RTX\Platform\Platform.h" />
+    <ClInclude Include="Src\RTX\Core\Base.h" />
+    <ClInclude Include="Src\RTX\Utilities\Types.h" />
+    <ClInclude Include="Src\RTX\RTX.h" />
+    <ClInclude Include="Src\RTX\Logger\ConsoleSink.h" />
+    <ClInclude Include="Src\RTX\Logger\FileSink.h" />
+    <ClInclude Include="Src\RTX\Logger\Formatter.h" />
+    <ClInclude Include="Src\RTX\Logger\FormatterUtility.h" />
+    <ClInclude Include="Src\RTX\Logger\Logger.h" />
+    <ClInclude Include="Src\RTX\Logger\Log.h" />
   </ItemGroup>
 </Project>
