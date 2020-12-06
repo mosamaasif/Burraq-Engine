@@ -1,8 +1,8 @@
-#include <RTX.h>
+#include <BRQ.h>
 
 #include "Logger.h"
 
-namespace RTX {
+namespace BRQ {
 
 	Logger* Log::s_CoreLogger = nullptr;
 	Logger* Log::s_ClientLogger = nullptr;
@@ -11,14 +11,14 @@ namespace RTX {
 		
 		LoggerProperties client, core;
 
-		client.loggerName = "APP";
-		core.loggerName = "RTX";
+		client.LoggerName = "APP";
+		core.LoggerName = "RTX";
 
 		s_CoreLogger = Logger::CreateLogger(core);
 		s_ClientLogger = Logger::CreateLogger(client);
 
-		RTX_CORE_INFO("Logger Initialized!");
-		RTX_INFO("Logger Initialized!");
+		BRQ_CORE_INFO("Logger Initialized!");
+		BRQ_INFO("Logger Initialized!");
 	}
 
 	void Log::Shutdown() {

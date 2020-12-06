@@ -13,6 +13,7 @@
 #include <fstream>
 #include <iostream>
 #include <memory.h>
+#include <functional>
 #include <string_view>
 
 #include "Platform/Platform.h"

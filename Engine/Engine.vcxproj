@@ -58,13 +58,13 @@
     <ClCompile>
       <WarningLevel>Level3</WarningLevel>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>RTX_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BRQ_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>Src\RTX\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>RTX.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -79,14 +79,14 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <PreprocessorDefinitions>RTX_RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>BRQ_RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>Src\RTX\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
-      <PrecompiledHeaderFile>RTX.h</PrecompiledHeaderFile>
+      <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -98,28 +98,32 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Src\RTX\Application\EntryPoint.cpp" />
-    <ClCompile Include="Src\RTX\Logger\ConsoleSink.cpp" />
-    <ClCompile Include="Src\RTX\Logger\FileSink.cpp" />
-    <ClCompile Include="Src\RTX\Logger\Formatter.cpp" />
-    <ClCompile Include="Src\RTX\Logger\Logger.cpp" />
-    <ClCompile Include="Src\RTX\RTX.cpp">
+    <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Window.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
+    <ClCompile Include="Src\BRQ\BRQ.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
-    <ClCompile Include="Src\RTX\Logger\Log.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\Log.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Src\RTX\Core\Base.h" />
-    <ClInclude Include="Src\RTX\Logger\ConsoleSink.h" />
-    <ClInclude Include="Src\RTX\Logger\FileSink.h" />
-    <ClInclude Include="Src\RTX\Logger\Formatter.h" />
-    <ClInclude Include="Src\RTX\Logger\FormatterUtility.h" />
-    <ClInclude Include="Src\RTX\Logger\Logger.h" />
-    <ClInclude Include="Src\RTX\Platform\Platform.h" />
-    <ClInclude Include="Src\RTX\RTX.h" />
-    <ClInclude Include="Src\RTX\Logger\Log.h" />
-    <ClInclude Include="Src\RTX\Utilities\Types.h" />
+    <ClInclude Include="Src\BRQ\Application\Window.h" />
+    <ClInclude Include="Src\BRQ\Core\Base.h" />
+    <ClInclude Include="Src\BRQ\Logger\ConsoleSink.h" />
+    <ClInclude Include="Src\BRQ\Logger\FileSink.h" />
+    <ClInclude Include="Src\BRQ\Logger\Formatter.h" />
+    <ClInclude Include="Src\BRQ\Logger\FormatterUtility.h" />
+    <ClInclude Include="Src\BRQ\Logger\Logger.h" />
+    <ClInclude Include="Src\BRQ\Platform\Platform.h" />
+    <ClInclude Include="Src\BRQ\Platform\Windows\WindowsWindow.h" />
+    <ClInclude Include="Src\BRQ\BRQ.h" />
+    <ClInclude Include="Src\BRQ\Logger\Log.h" />
+    <ClInclude Include="Src\BRQ\Utilities\Types.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

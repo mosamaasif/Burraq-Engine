@@ -1,24 +1,28 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Src\RTX\Application\EntryPoint.cpp" />
-    <ClCompile Include="Src\RTX\RTX.cpp" />
-    <ClCompile Include="Src\RTX\Logger\ConsoleSink.cpp" />
-    <ClCompile Include="Src\RTX\Logger\FileSink.cpp" />
-    <ClCompile Include="Src\RTX\Logger\Formatter.cpp" />
-    <ClCompile Include="Src\RTX\Logger\Logger.cpp" />
-    <ClCompile Include="Src\RTX\Logger\Log.cpp" />
+    <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Window.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\Log.cpp" />
+    <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
+    <ClCompile Include="Src\BRQ\BRQ.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Src\RTX\Platform\Platform.h" />
-    <ClInclude Include="Src\RTX\Core\Base.h" />
-    <ClInclude Include="Src\RTX\Utilities\Types.h" />
-    <ClInclude Include="Src\RTX\RTX.h" />
-    <ClInclude Include="Src\RTX\Logger\ConsoleSink.h" />
-    <ClInclude Include="Src\RTX\Logger\FileSink.h" />
-    <ClInclude Include="Src\RTX\Logger\Formatter.h" />
-    <ClInclude Include="Src\RTX\Logger\FormatterUtility.h" />
-    <ClInclude Include="Src\RTX\Logger\Logger.h" />
-    <ClInclude Include="Src\RTX\Logger\Log.h" />
+    <ClInclude Include="Src\BRQ\Application\Window.h" />
+    <ClInclude Include="Src\BRQ\Core\Base.h" />
+    <ClInclude Include="Src\BRQ\Logger\ConsoleSink.h" />
+    <ClInclude Include="Src\BRQ\Logger\FileSink.h" />
+    <ClInclude Include="Src\BRQ\Logger\Formatter.h" />
+    <ClInclude Include="Src\BRQ\Logger\FormatterUtility.h" />
+    <ClInclude Include="Src\BRQ\Logger\Log.h" />
+    <ClInclude Include="Src\BRQ\Logger\Logger.h" />
+    <ClInclude Include="Src\BRQ\Platform\Windows\WindowsWindow.h" />
+    <ClInclude Include="Src\BRQ\Platform\Platform.h" />
+    <ClInclude Include="Src\BRQ\Utilities\Types.h" />
+    <ClInclude Include="Src\BRQ\BRQ.h" />
   </ItemGroup>
 </Project>
