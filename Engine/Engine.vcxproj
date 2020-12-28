@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -99,6 +99,7 @@
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Input.cpp" />
     <ClCompile Include="Src\BRQ\Application\Window.cpp" />
     <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
@@ -112,8 +113,14 @@
     <ClCompile Include="Src\BRQ\Logger\Log.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\BRQ\Application\Input.h" />
+    <ClInclude Include="Src\BRQ\Application\Keys.h" />
     <ClInclude Include="Src\BRQ\Application\Window.h" />
     <ClInclude Include="Src\BRQ\Core\Base.h" />
+    <ClInclude Include="Src\BRQ\Events\ApplicationEvents.h" />
+    <ClInclude Include="Src\BRQ\Events\Event.h" />
+    <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
+    <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
     <ClInclude Include="Src\BRQ\Logger\ConsoleSink.h" />
     <ClInclude Include="Src\BRQ\Logger\FileSink.h" />
     <ClInclude Include="Src\BRQ\Logger\Formatter.h" />

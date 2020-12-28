@@ -10,6 +10,7 @@
     <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="Src\BRQ\BRQ.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Input.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -24,5 +25,11 @@
     <ClInclude Include="Src\BRQ\Platform\Platform.h" />
     <ClInclude Include="Src\BRQ\Utilities\Types.h" />
     <ClInclude Include="Src\BRQ\BRQ.h" />
+    <ClInclude Include="Src\BRQ\Events\Event.h" />
+    <ClInclude Include="Src\BRQ\Events\ApplicationEvents.h" />
+    <ClInclude Include="Src\BRQ\Application\Keys.h" />
+    <ClInclude Include="Src\BRQ\Application\Input.h" />
+    <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
+    <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
   </ItemGroup>
 </Project>

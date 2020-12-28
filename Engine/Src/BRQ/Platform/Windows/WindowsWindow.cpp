@@ -1,18 +1,21 @@
 #include <BRQ.h>
 
 #include "WindowsWindow.h"
+#include "Application/Input.h"
 
 namespace BRQ {
 
     WindowsWindow::WindowsWindow(const WindowProperties& properties)
         : m_Properties(properties), m_WindowHandle(nullptr) {
 
+        Input::Init();
         m_Open = Init();
     }
 
     WindowsWindow::~WindowsWindow() {
 
         DestroyWindow((HWND)m_WindowHandle);
+        Input::Shutdown();
     }
 
     void WindowsWindow::OnUpdate() {
@@ -60,12 +63,16 @@ namespace BRQ {
 
         std::wstring title(m_Properties.Title.begin(), m_Properties.Title.end());
 
+        RECT r = { 0, 0, (LONG)m_Properties.Width, (LONG)m_Properties.Height };
+
+        AdjustWindowRectEx(&r, WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN, false, WS_EX_APPWINDOW | WS_EX_WINDOWEDGE);
+
         m_WindowHandle = CreateWindowEx(
             WS_EX_APPWINDOW | WS_EX_WINDOWEDGE,
             className,
             title.c_str(),
             WS_OVERLAPPEDWINDOW | WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-            CW_USEDEFAULT, CW_USEDEFAULT, m_Properties.Width, m_Properties.Height,
+            CW_USEDEFAULT, CW_USEDEFAULT, r.right - r.left, r.bottom - r.top,
             NULL, NULL, hInstance, this);
 
         if (m_WindowHandle == NULL) {
@@ -104,11 +111,83 @@ namespace BRQ {
 
     LRESULT WindowsWindow::EventCallbackHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
 
+        auto input = Input::GetInstance();
+
         switch (msg) {
 
         case WM_DESTROY:
+
             PostQuitMessage(0);
             break;
+
+        case WM_KILLFOCUS:
+
+            input->ClearState();
+            break;
+
+        case WM_KEYDOWN:
+
+            input->KeyCallback(KeyPressedEvent((Key)wParam));
+            break;
+
+        case WM_KEYUP:
+
+            input->KeyCallback(KeyPressedEvent((Key)wParam));
+            break;
+
+        case WM_LBUTTONDOWN:
+
+            SetCapture((HWND)m_WindowHandle);
+            input->MouseButtonCallback(MouseButtonPressedEvent(MouseButton::ButtonLeft));
+            break;
+
+        case WM_LBUTTONUP:
+
+            ReleaseCapture();
+            input->MouseButtonCallback(MouseButtonReleasedEvent(MouseButton::ButtonLeft));
+            break;
+
+        case WM_RBUTTONDOWN:
+
+            SetCapture((HWND)m_WindowHandle);
+            input->MouseButtonCallback(MouseButtonPressedEvent(MouseButton::ButtonRight));
+            break;
+
+        case WM_RBUTTONUP:
+
+            ReleaseCapture();
+            input->MouseButtonCallback(MouseButtonReleasedEvent(MouseButton::ButtonRight));
+            break;
+
+        case WM_MBUTTONDOWN:
+
+            SetCapture((HWND)m_WindowHandle);
+            input->MouseButtonCallback(MouseButtonPressedEvent(MouseButton::ButtonMiddle));
+            break;
+
+        case WM_MBUTTONUP:
+
+            ReleaseCapture();
+            input->MouseButtonCallback(MouseButtonReleasedEvent(MouseButton::ButtonMiddle));
+            break;
+
+        case WM_MOUSEMOVE:
+
+            POINTS pt = MAKEPOINTS(lParam);
+
+            if (pt.x >= 0 && pt.x <= (SHORT)m_Properties.Width && pt.y >= 0 && pt.y <= (SHORT)m_Properties.Height) {
+
+                input->MouseMovedCallback(MouseMovedEvent(pt.x, pt.y));
+                SetCapture((HWND)m_WindowHandle);
+            }
+            else {
+
+                ReleaseCapture();
+                input->ClearState();
+            }
+
+            break;
+
         default:
             return DefWindowProc(hwnd, msg, wParam, lParam);
         }

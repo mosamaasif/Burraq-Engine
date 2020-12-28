@@ -1,10 +1,14 @@
 #pragma once
 
 #include "Application/Window.h"
+#include "Events/Event.h"
 
 namespace BRQ {
 
     class WindowsWindow : public Window {
+
+    public:
+        using EventCallbackFn = std::function<void(Event&)>;
 
     private:
         WindowProperties    m_Properties;
