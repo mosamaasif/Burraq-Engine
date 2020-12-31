@@ -15,6 +15,8 @@
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInstance.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSurface.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapChain.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\FileSystem.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKShader.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -40,5 +42,11 @@
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInstance.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSurface.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapChain.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKShader.h" />
+    <ClInclude Include="Src\BRQ\Utilities\FileSystem.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Src\Shaders\VertexShader.vert" />
+    <None Include="Src\Shaders\ShaderCompilerScript.bat" />
   </ItemGroup>
 </Project>

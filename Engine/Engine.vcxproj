@@ -52,7 +52,8 @@
     <LinkIncremental>false</LinkIncremental>
     <OutDir>$(SolutionDir)Bin\$(Platform)\$(Configuration)\</OutDir>
     <IntDir>$(SolutionDir)Bin\Intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -112,6 +113,7 @@
     <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKDevice.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInstance.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKShader.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSurface.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapChain.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
@@ -120,6 +122,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Src\BRQ\Logger\Log.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\FileSystem.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Input.h" />
@@ -139,12 +142,18 @@
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommon.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKDevice.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInstance.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKShader.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSurface.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapChain.h" />
     <ClInclude Include="Src\BRQ\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="Src\BRQ\BRQ.h" />
     <ClInclude Include="Src\BRQ\Logger\Log.h" />
+    <ClInclude Include="Src\BRQ\Utilities\FileSystem.h" />
     <ClInclude Include="Src\BRQ\Utilities\Types.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Src\Shaders\ShaderCompilerScript.bat" />
+    <None Include="Src\Shaders\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
