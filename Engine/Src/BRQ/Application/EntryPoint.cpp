@@ -5,39 +5,46 @@
 #include "Window.h"
 #include "Input.h"
 
+#include "Platform/Vulkan/VKDevice.h"
+#include "Platform/Vulkan/VKSurface.h"
+#include "Platform/Vulkan/VKInstance.h"
+#include "Platform/Vulkan/VKSwapChain.h"
+
 int main() {
 
-	BRQ::Log::Init();
+	using namespace BRQ;
 
-	BRQ::Window* window = BRQ::Window::Create();
+	Log::Init();
 
-	auto input = BRQ::Input::GetInstance();
+	Window* window = Window::Create();
+
+	auto input = Input::GetInstance();
+
+	VKInstance instance;
+	VKSurface surface;
+	VKDevice device;
+	VKSwapChain swapchain;
+
+	instance.Create();
+	surface.Create(window, &instance);
+	device.Create(&instance, &surface);
+	swapchain.Create(&surface, &device, window);
+
 
 	while (window->IsOpen()) {
-
-		if (input->IsMouseButtonPressed(BRQ::MouseButton::ButtonLeft)) {
-
-			BRQ_WARN("Left");
-		}
-
-		if (input->IsMouseButtonPressed(BRQ::MouseButton::ButtonRight)) {
-
-			BRQ_WARN("Right");
-		}
-
-		if (input->IsMouseButtonPressed(BRQ::MouseButton::ButtonMiddle)) {
-
-			BRQ_WARN("Middle");
-		}
-
-		std::cout << "X: " << input->GetMouseX() << ", Y: " << input->GetMouseY() << std::endl;
 
 		window->OnUpdate();
 	}
 
+	swapchain.Destroy();
+
+	device.Destroy();
+	surface.Destroy();
+	instance.Destroy();
+
 	delete window;
 
-	BRQ::Log::Shutdown();
+	Log::Shutdown();
 
 	return 0;
 }

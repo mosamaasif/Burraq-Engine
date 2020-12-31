@@ -11,6 +11,10 @@
     <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="Src\BRQ\BRQ.cpp" />
     <ClCompile Include="Src\BRQ\Application\Input.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKDevice.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInstance.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSurface.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapChain.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -31,5 +35,10 @@
     <ClInclude Include="Src\BRQ\Application\Input.h" />
     <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
     <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommon.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKDevice.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInstance.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSurface.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapChain.h" />
   </ItemGroup>
 </Project>

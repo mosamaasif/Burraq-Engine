@@ -8,6 +8,7 @@
     #undef NOMINMAX
 #endif
 
+#include <set>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
@@ -16,6 +17,11 @@
 #include <memory.h>
 #include <functional>
 #include <string_view>
+
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
+
+#include <Platform/Vulkan/VKCommon.h>
 
 #include "Platform/Platform.h"
 #include "Utilities/Types.h"

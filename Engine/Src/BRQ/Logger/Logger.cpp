@@ -63,7 +63,7 @@ namespace BRQ {
         memset(buffer, 0, size);
         GetTime("{}:{}:{}", buffer, size);
 
-        m_Formatter.Format("[{}] {}: ", (const char*)buffer, m_LoggerName);
+        m_Formatter.Format("[{}] [{}]: ", (const char*)buffer, m_LoggerName);
 
         m_Formatter.GetBuffer(buffer, size);
     }

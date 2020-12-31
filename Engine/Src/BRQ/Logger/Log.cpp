@@ -12,10 +12,19 @@ namespace BRQ {
 		LoggerProperties client, core;
 
 		client.LoggerName = "APP";
-		core.LoggerName = "RTX";
+		core.LoggerName = "Burraq";
 
 		s_CoreLogger = Logger::CreateLogger(core);
 		s_ClientLogger = Logger::CreateLogger(client);
+
+#ifdef BRQ_DEBUG
+
+		s_CoreLogger->SetLogLevel(Logger::LogLevel::Info);
+		s_ClientLogger->SetLogLevel(Logger::LogLevel::Info);
+#else	
+		s_CoreLogger->SetLogLevel(Logger::LogLevel::Trace);
+		s_ClientLogger->SetLogLevel(Logger::LogLevel::Trace);
+#endif
 
 		BRQ_CORE_INFO("Logger Initialized!");
 		BRQ_INFO("Logger Initialized!");
