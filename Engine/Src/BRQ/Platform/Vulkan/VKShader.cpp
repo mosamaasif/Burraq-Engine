@@ -5,18 +5,14 @@
 
 namespace BRQ {
 
-    std::vector<VkPipelineShaderStageCreateInfo> VKShader::s_ShaderStages;
+    std::vector<VkPipelineShaderStageCreateInfo> VKShader::s_ShaderStages(0);
 
     VKShader::VKShader()
-        : m_ShaderModule(VK_NULL_HANDLE) { }
-
-    VKShader::VKShader(const VKDevice* device, const std::string_view filename, ShaderType type)
-        : m_Device(device) {
-
-        Create(m_Device, filename, type);
-    }
+        : m_ShaderModule(VK_NULL_HANDLE), m_Device(nullptr) { }
 
     void VKShader::Create(const VKDevice* device, const std::string_view filename, ShaderType type) {
+
+        m_Device = device;
 
         const auto result = filename.find(".spv");
 
@@ -67,7 +63,11 @@ namespace BRQ {
             }
         }
 
-        vkDestroyShaderModule(m_Device->GetLogicalDevice(), m_ShaderModule, nullptr);
+        if (m_ShaderModule) {
+
+            vkDestroyShaderModule(m_Device->GetLogicalDevice(), m_ShaderModule, nullptr);
+            m_ShaderModule = VK_NULL_HANDLE;
+        }
     }
 
     VkShaderStageFlagBits VKShader::ShaderTypeToVkShaderStageFlagBit(ShaderType type) const {

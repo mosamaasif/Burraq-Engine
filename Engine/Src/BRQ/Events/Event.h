@@ -65,5 +65,4 @@ namespace BRQ {
 			return false;
 		}
 	};
-
 }

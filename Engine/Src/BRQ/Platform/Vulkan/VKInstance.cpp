@@ -1,6 +1,7 @@
 #include <BRQ.h>
 
 #include "VkInstance.h"
+#include <vulkan/vulkan_win32.h>
 
 namespace BRQ {
 
@@ -78,12 +79,11 @@ namespace BRQ {
 
         info.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugInfo;
 #endif
-
         VK_CHECK(vkCreateInstance(&info, nullptr, &m_VKInstance));
 
 #ifdef BRQ_DEBUG
         PFN_vkCreateDebugUtilsMessengerEXT func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_VKInstance, "vkCreateDebugUtilsMessengerEXT");
-        BRQ_CORE_ASSERT("vkCreateDebugUtilsMessengerEXT not available!");
+        BRQ_CORE_ASSERT(func);
         VK_CHECK(func(m_VKInstance, &debugInfo, nullptr, &m_DebugMessenger));
 #endif 
     }
@@ -92,10 +92,13 @@ namespace BRQ {
 
 #ifdef BRQ_DEBUG
         auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(m_VKInstance, "vkDestroyDebugUtilsMessengerEXT");
-        if (func != nullptr) {
-            func(m_VKInstance, m_DebugMessenger, nullptr);
-        }
+        BRQ_CORE_ASSERT(func);
+        func(m_VKInstance, m_DebugMessenger, nullptr);
 #endif
-        vkDestroyInstance(m_VKInstance, nullptr);
+        if (m_VKInstance) {
+
+            vkDestroyInstance(m_VKInstance, nullptr);
+            m_VKInstance = VK_NULL_HANDLE;
+        }
     }
 }

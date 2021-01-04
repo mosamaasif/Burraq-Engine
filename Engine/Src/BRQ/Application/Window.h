@@ -10,7 +10,7 @@ namespace BRQ {
         U32         Width;
         U32         Height;
 
-        WindowProperties(std::string title = "Burraq Engine", U32 width = 1280U, U32 height = 720U)
+        WindowProperties(std::string title = "Burraq Engine", U32 width = 800U, U32 height = 600U)
             : Title(title), Width(width), Height(height) { }
     };
 

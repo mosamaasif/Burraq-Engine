@@ -7,29 +7,35 @@
 namespace BRQ {
 
     VKDevice::VKDevice()
-        : m_PhysicalDevice(VK_NULL_HANDLE), m_LogicalDevice(VK_NULL_HANDLE), m_GraphicsQueue(VK_NULL_HANDLE), m_PresentationQueue(VK_NULL_HANDLE) { }
+        : m_PhysicalDevice(VK_NULL_HANDLE), m_LogicalDevice(VK_NULL_HANDLE),
+          m_GraphicsQueue(VK_NULL_HANDLE), m_PresentationQueue(VK_NULL_HANDLE),
+          m_GraphicsQueueIndex(UINT32_MAX), m_PresentationQueueIndex(UINT32_MAX) { }
 
     void VKDevice::Create(const VKInstance* vkInstance, const VKSurface* surface) {
 
-        SelectPhysicalDevice(vkInstance->GetVulkanInstance(), surface->GetVulkanSurface());
-        CreateLogicalDevice(surface->GetVulkanSurface());
+        SelectPhysicalDevice(&vkInstance->GetInstance(), &surface->GetSurface());
+        CreateLogicalDevice(&surface->GetSurface());
     }
 
     void VKDevice::Destroy() {
 
-        vkDestroyDevice(m_LogicalDevice, nullptr);
+        if (m_LogicalDevice) {
+
+            vkDestroyDevice(m_LogicalDevice, nullptr);
+            m_LogicalDevice = VK_NULL_HANDLE;
+        }
     }
 
-    void VKDevice::SelectPhysicalDevice(const VkInstance& vkInstance, const VkSurfaceKHR& surface) {
+    void VKDevice::SelectPhysicalDevice(const VkInstance* vkInstance, const VkSurfaceKHR* surface) {
 
         U32 deviceCount = 0;
 
-        VK_CHECK(vkEnumeratePhysicalDevices(vkInstance, &deviceCount, nullptr));
+        VK_CHECK(vkEnumeratePhysicalDevices(*vkInstance, &deviceCount, nullptr));
         BRQ_CORE_ASSERT(deviceCount);
 
         std::vector<VkPhysicalDevice> physicalDevices(deviceCount);
 
-        VK_CHECK(vkEnumeratePhysicalDevices(vkInstance, &deviceCount, &physicalDevices[0]));
+        VK_CHECK(vkEnumeratePhysicalDevices(*vkInstance, &deviceCount, &physicalDevices[0]));
 
         for (const auto& device : physicalDevices) {
 
@@ -42,8 +48,8 @@ namespace BRQ {
             VkPhysicalDeviceMemoryProperties memProps;
             vkGetPhysicalDeviceMemoryProperties(device, &memProps);
 
-            U32 presentation = GetQueueFamilyIndex(device, QueueType::Presentation, surface);
-            U32 graphics = GetQueueFamilyIndex(device, QueueType::Graphics, surface);
+            U32 presentation = GetQueueFamilyIndex(&device, QueueType::Presentation, surface);
+            U32 graphics = GetQueueFamilyIndex(&device, QueueType::Graphics, surface);
 
             if ((presentation == VK_QUEUE_FAMILY_IGNORED) && (graphics == VK_QUEUE_FAMILY_IGNORED))
                 continue;
@@ -54,6 +60,9 @@ namespace BRQ {
             if (props.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU) {
 
                 m_PhysicalDevice = device;
+
+                m_GraphicsQueueIndex = graphics;
+                m_PresentationQueueIndex = presentation;
                 break;
             }
         }
@@ -72,12 +81,12 @@ namespace BRQ {
         }
     }
 
-    void VKDevice::CreateLogicalDevice(const VkSurfaceKHR& surface) {
+    void VKDevice::CreateLogicalDevice(const VkSurfaceKHR* surface) {
 
         const F32 queuePriority[] = { 1.0f };
 
-        U32 presentation = GetQueueFamilyIndex(m_PhysicalDevice, QueueType::Presentation, surface);
-        U32 graphics = GetQueueFamilyIndex(m_PhysicalDevice, QueueType::Graphics, surface);
+        U32 presentation = GetQueueFamilyIndex(&m_PhysicalDevice, QueueType::Presentation, surface);
+        U32 graphics = GetQueueFamilyIndex(&m_PhysicalDevice, QueueType::Graphics, surface);
 
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
         std::set<U32> queueFamilies = { presentation, graphics };
@@ -118,14 +127,14 @@ namespace BRQ {
         vkGetDeviceQueue(m_LogicalDevice, presentation, 0, &m_PresentationQueue);
     }
 
-    U32 VKDevice::GetQueueFamilyIndex(const VkPhysicalDevice& device, QueueType type, const VkSurfaceKHR& surface) const {
+    U32 VKDevice::GetQueueFamilyIndex(const VkPhysicalDevice* device, QueueType type, const VkSurfaceKHR* surface) const {
 
         U32 queueCount = 0;
 
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, nullptr);
+        vkGetPhysicalDeviceQueueFamilyProperties(*device, &queueCount, nullptr);
 
         std::vector<VkQueueFamilyProperties> queues(queueCount);
-        vkGetPhysicalDeviceQueueFamilyProperties(device, &queueCount, &queues[0]);
+        vkGetPhysicalDeviceQueueFamilyProperties(*device, &queueCount, &queues[0]);
 
         for (U32 i = 0; i < queueCount; i++) {
 
@@ -139,7 +148,7 @@ namespace BRQ {
             else if (type == QueueType::Presentation) {
 
                 VkBool32 presentSupport = false;
-                vkGetPhysicalDeviceSurfaceSupportKHR(device, i, surface, &presentSupport);
+                vkGetPhysicalDeviceSurfaceSupportKHR(*device, i, *surface, &presentSupport);
 
                 if (presentSupport) {
 

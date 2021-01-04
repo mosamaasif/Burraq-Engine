@@ -6,7 +6,6 @@
 #include "Events/KeyEvent.h"
 #include "Events/MouseEvent.h"
 
-
 #define MAX_KEYS        512
 #define MAX_BUTTONS     8
 
@@ -44,9 +43,8 @@ namespace BRQ {
 
         void ClearState();
 
-        void KeyCallback(const KeyEvent& event);
-        void MouseButtonCallback(const MouseButtonEvent& event);
-        void MouseMovedCallback(const MouseMovedEvent& event);
+        bool KeyCallback(const KeyEvent& event);
+        bool MouseButtonCallback(const MouseButtonEvent& event);
+        bool MouseMovedCallback(const MouseMovedEvent& event);
     };
 }
-

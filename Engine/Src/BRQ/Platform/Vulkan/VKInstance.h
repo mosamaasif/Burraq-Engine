@@ -1,6 +1,7 @@
 #pragma once
 
-#include <BRQ.h>
+#include <vulkan/vulkan.h>
+#include "VKCommon.h"
 
 namespace BRQ {
 
@@ -20,6 +21,6 @@ namespace BRQ {
         void Create();
         void Destroy();
 
-        const VkInstance& GetVulkanInstance() const { return m_VKInstance; }
+        const VkInstance& GetInstance() const { return m_VKInstance; }
     };
 }

@@ -1,6 +1,7 @@
 #pragma once
 
-#include "BRQ.h"
+#include <vulkan/vulkan.h>
+#include "VKCommon.h"
 
 namespace BRQ {
 
@@ -28,7 +29,7 @@ namespace BRQ {
 
     public:
         VKShader();
-        VKShader(const VKDevice* device, const std::string_view filename, ShaderType type);
+        ~VKShader() = default;
 
         void Create(const VKDevice* device, const std::string_view filename, ShaderType type);
         void Destroy();

@@ -56,7 +56,7 @@ namespace BRQ {
         s_MouseY = 0.0f;
     }
 
-    void Input::KeyCallback(const KeyEvent& event) {
+    bool Input::KeyCallback(const KeyEvent& event) {
 
         Key key = event.GetKeyCode();
         EventType type = event.GetEventType();
@@ -69,9 +69,10 @@ namespace BRQ {
 
             s_Key[(U16)key] = false;
         }
+        return true;
     }
 
-    void Input::MouseButtonCallback(const MouseButtonEvent& event) {
+    bool Input::MouseButtonCallback(const MouseButtonEvent& event) {
 
         MouseButton button = event.GetMouseButton();
         EventType type = event.GetEventType();
@@ -84,9 +85,10 @@ namespace BRQ {
 
             s_Mouse[(U16)button] = false;
         }
+        return true;
     }
 
-    void Input::MouseMovedCallback(const MouseMovedEvent& event) {
+    bool Input::MouseMovedCallback(const MouseMovedEvent& event) {
 
         EventType type = event.GetEventType();
 
@@ -95,5 +97,6 @@ namespace BRQ {
             s_MouseX = event.GetX();
             s_MouseY = event.GetY();
         }
+        return true;
     }
 }

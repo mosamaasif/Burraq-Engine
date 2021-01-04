@@ -1,6 +1,8 @@
 #pragma once
 
-#include <BRQ.h>
+#include <vulkan/vulkan.h>
+#include <vulkan/vulkan_win32.h>
+#include "VKCommon.h"
 
 namespace BRQ {
 
@@ -18,13 +20,13 @@ namespace BRQ {
         VKSurface();
         ~VKSurface() = default;
 
-        const VkSurfaceKHR& GetVulkanSurface() const { return m_Surface; }
+        const VkSurfaceKHR& GetSurface() const { return m_Surface; }
 
-        VkSurfaceCapabilitiesKHR GetVulkanSurfaceCapabilities(const VKDevice& device) const;
-        std::vector<VkSurfaceFormatKHR> GetVulkanSurfaceFormat(const VKDevice& device) const;
-        std::vector<VkPresentModeKHR> GetVulkanPresentMode(const VKDevice& device) const;
+        VkSurfaceCapabilitiesKHR GetSurfaceCapabilities(const VKDevice* device) const;
+        std::vector<VkSurfaceFormatKHR> GetSurfaceFormat(const VKDevice* device) const;
+        std::vector<VkPresentModeKHR> GetPresentMode(const VKDevice* device) const;
 
-        void Create(const Window* window, const VKInstance* vkInstance);
+        void Create(const VKInstance* vkInstance, const Window* window);
         void Destroy();
     };
 }

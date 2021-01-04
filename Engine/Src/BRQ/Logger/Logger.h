@@ -36,8 +36,7 @@ namespace BRQ {
         const char* m_LoggerName;
         LogLevel    m_LogLevel;
         bool        m_FileLogging;
-
-        U8*       m_Buffer;
+        U8*         m_Buffer;
 
     public:
         Logger() = delete;

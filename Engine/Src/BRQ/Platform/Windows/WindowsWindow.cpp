@@ -3,6 +3,8 @@
 #include "WindowsWindow.h"
 #include "Application/Input.h"
 
+#include "Events/WindowEvents.h"
+
 namespace BRQ {
 
     WindowsWindow::WindowsWindow(const WindowProperties& properties)
@@ -36,7 +38,7 @@ namespace BRQ {
 
     bool WindowsWindow::Init() {
 
-        LPCWSTR className = L"RTX Window Class";
+        LPCWSTR className = L"Burraq Window Class";
 
         WNDCLASSEX wc = {};
         ZeroMemory(&wc, sizeof(WNDCLASSEX));
@@ -185,7 +187,12 @@ namespace BRQ {
                 ReleaseCapture();
                 input->ClearState();
             }
+            break;
 
+        case WM_SIZE:
+
+            m_Properties.Width = LOWORD(lParam);
+            m_Properties.Height = HIWORD(lParam);
             break;
 
         default:

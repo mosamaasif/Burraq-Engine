@@ -18,11 +18,6 @@
 #include <functional>
 #include <string_view>
 
-#include <vulkan/vulkan.h>
-#include <vulkan/vulkan_win32.h>
-
-#include <Platform/Vulkan/VKCommon.h>
-
 #include "Platform/Platform.h"
 
 #include "Core/Base.h"

@@ -39,9 +39,7 @@ namespace BRQ { namespace Utilities {
         void WriteFile(const std::string_view& filename, InputMode mode, const std::vector<BYTE>& data) const;
 
         void SetRootDirectory(const std::string& root) { m_RootDirectory = root; }
-
     private:
         const char* InputModeToString(InputMode mode) const;
-
     };
 } }

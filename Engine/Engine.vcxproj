@@ -66,6 +66,7 @@
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -93,6 +94,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>true</OmitFramePointers>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DisableSpecificWarnings>26812;%(DisableSpecificWarnings)</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -107,15 +109,24 @@
     <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
     <ClCompile Include="Src\BRQ\Application\Input.cpp" />
     <ClCompile Include="Src\BRQ\Application\Window.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
     <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKFence.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKCommandBuffer.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKCommandPool.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKDevice.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKFramebuffer.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKGraphicsPipeline.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInstance.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKPipelineLayout.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKRenderPass.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSemaphore.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKShader.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSurface.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapChain.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapchain.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="Src\BRQ\BRQ.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
@@ -129,31 +140,41 @@
     <ClInclude Include="Src\BRQ\Application\Keys.h" />
     <ClInclude Include="Src\BRQ\Application\Window.h" />
     <ClInclude Include="Src\BRQ\Core\Base.h" />
-    <ClInclude Include="Src\BRQ\Events\ApplicationEvents.h" />
+    <ClInclude Include="Src\BRQ\Events\WindowEvents.h" />
     <ClInclude Include="Src\BRQ\Events\Event.h" />
     <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
     <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Renderer.h" />
     <ClInclude Include="Src\BRQ\Logger\ConsoleSink.h" />
     <ClInclude Include="Src\BRQ\Logger\FileSink.h" />
     <ClInclude Include="Src\BRQ\Logger\Formatter.h" />
     <ClInclude Include="Src\BRQ\Logger\FormatterUtility.h" />
     <ClInclude Include="Src\BRQ\Logger\Logger.h" />
     <ClInclude Include="Src\BRQ\Platform\Platform.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKFence.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommandBuffer.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommandPool.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommon.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKDevice.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKFramebuffer.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInstance.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKPipelineLayout.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKRenderPass.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSemaphore.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKShader.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSurface.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapChain.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapchain.h" />
     <ClInclude Include="Src\BRQ\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="Src\BRQ\BRQ.h" />
     <ClInclude Include="Src\BRQ\Logger\Log.h" />
     <ClInclude Include="Src\BRQ\Utilities\FileSystem.h" />
     <ClInclude Include="Src\BRQ\Utilities\Types.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKGraphicsPipeline.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="Src\Shaders\shader.frag" />
+    <None Include="Src\Shaders\shader.vert" />
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />
-    <None Include="Src\Shaders\VertexShader.vert" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
