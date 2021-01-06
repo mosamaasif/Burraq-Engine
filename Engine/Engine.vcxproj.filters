@@ -26,6 +26,10 @@
     <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapchain.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Mesh.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\VulkanMemoryAllocator.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKVertexBuffer.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKIndexBuffer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -62,10 +66,20 @@
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapchain.h" />
     <ClInclude Include="Src\BRQ\Graphics\Renderer.h" />
     <ClInclude Include="Src\BRQ\Events\WindowEvents.h" />
+    <ClInclude Include="ThirdParty\TinyObjLoader\include\tiny_obj_loader.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Mesh.h" />
+    <ClInclude Include="ThirdParty\meshoptimizer\include\meshoptimizer.h" />
+    <ClInclude Include="ThirdParty\VulkanMemoryAllocator\include\vk_mem_alloc.h" />
+    <ClInclude Include="Src\BRQ\Utilities\VulkanMemoryAllocator.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKVertexBuffer.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKIndexBuffer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />
     <None Include="Src\Shaders\shader.vert" />
     <None Include="Src\Shaders\shader.frag" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="ThirdParty\meshoptimizer\lib\meshoptimizer.lib" />
   </ItemGroup>
 </Project>

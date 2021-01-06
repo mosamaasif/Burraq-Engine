@@ -3,8 +3,21 @@
 #include "Renderer.h"
 
 #include "Application/Window.h"
+#include "Utilities/VulkanMemoryAllocator.h"
+
+#include "Platform/Vulkan/VKIndexBuffer.h"
+#include "Platform/Vulkan/VKVertexBuffer.h"
+#include "Graphics/Mesh.h"
+
+
 
 namespace BRQ {
+
+	// this should be here
+	Mesh mesh;
+
+	VKVertexBuffer buffer;
+	VKIndexBuffer indexBuffer;
 
 	Renderer* Renderer::s_Renderer = nullptr;
 	std::vector<std::pair<std::string, VKShader::ShaderType>> Renderer::s_ShaderResources;
@@ -58,7 +71,12 @@ namespace BRQ {
 				m_RenderPass->Begin(&m_CommandBuffers[i], &m_Swapchain->GetFramebuffers()[i]);
 				m_GraphicsPipeline->Bind(&m_CommandBuffers[i]);
 
-				vkCmdDraw(m_CommandBuffers[i].GetCommandBuffer(), 3, 1, 0, 0);
+
+				VkDeviceSize offset = 0;
+				vkCmdBindVertexBuffers(m_CommandBuffers[i].GetCommandBuffer(), 0, 1, &buffer.GetVertexBuffer(), &offset);
+				vkCmdBindIndexBuffer(m_CommandBuffers[i].GetCommandBuffer(), indexBuffer.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+				vkCmdDrawIndexed(m_CommandBuffers[i].GetCommandBuffer(), mesh.GetIndices().size(), 1, 0, 0, 0);
 
 				m_RenderPass->End(&m_CommandBuffers[i]);
 				m_CommandBuffers[i].End();
@@ -116,14 +134,28 @@ namespace BRQ {
 			m_InFlightFences[i].Create(m_Device);
 		}
 
-		// This is just for testing
+
+		VulkanMemoryAllocator::Init(m_VulkanInstance, m_Device);
+
+		//mesh.LoadMesh("Src/Models/kitten.obj");
+		//mesh.LoadMesh("Src/Models/Mickeytest.obj");
+		mesh.LoadMesh("Src/Models/pirate.obj");
+		buffer.Create(mesh.GetVertices());
+		indexBuffer.Create(mesh.GetIndices());
+		
+
 		for (U64 i = 0; i < m_CommandBuffers.size(); i++) {
 
 			m_CommandBuffers[i].Begin();
 			m_RenderPass->Begin(&m_CommandBuffers[i], &m_Swapchain->GetFramebuffers()[i]);
 			m_GraphicsPipeline->Bind(&m_CommandBuffers[i]);
 
-			vkCmdDraw(m_CommandBuffers[i].GetCommandBuffer(), 3, 1, 0, 0);
+
+			VkDeviceSize offset = 0;
+			vkCmdBindVertexBuffers(m_CommandBuffers[i].GetCommandBuffer(), 0, 1, &buffer.GetVertexBuffer(), &offset);
+			vkCmdBindIndexBuffer(m_CommandBuffers[i].GetCommandBuffer(), indexBuffer.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+
+			vkCmdDrawIndexed(m_CommandBuffers[i].GetCommandBuffer(), mesh.GetIndices().size(), 1, 0, 0, 0);
 
 			m_RenderPass->End(&m_CommandBuffers[i]);
 			m_CommandBuffers[i].End();
@@ -133,6 +165,11 @@ namespace BRQ {
 	void Renderer::DestroyInternal() {
 
 		m_Device->WaitDeviceIdle();
+
+		indexBuffer.Destroy();
+		buffer.Destroy();
+
+		VulkanMemoryAllocator::Shutdown();
 
 		for (U64 i = 0; i < MAX_FRAMES_IN_FLIGHT; i++) {
 

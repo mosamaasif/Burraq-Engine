@@ -8,6 +8,8 @@
 #include "VKPipelineLayout.h"
 #include "VKGraphicsPipeline.h"
 
+#include "Graphics/Mesh.h"
+
 namespace BRQ {
 
 	VKGraphicsPipeline::VKGraphicsPipeline()
@@ -23,10 +25,30 @@ namespace BRQ {
 		
         m_Device = device;
 
+        VkVertexInputBindingDescription bindingDescription = {};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(Vertex);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        VkVertexInputAttributeDescription attributeDescription[2] = { {}, {} };
+
+        attributeDescription[0].binding = 0;
+        attributeDescription[0].location = 0;
+        attributeDescription[0].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescription[0].offset = offsetof(Vertex, positions);
+
+        attributeDescription[1].binding = 0;
+        attributeDescription[1].location = 1;
+        attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescription[1].offset = offsetof(Vertex, normals);
+
+
         VkPipelineVertexInputStateCreateInfo vertexInfo = {};
         vertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInfo.vertexBindingDescriptionCount = 0;
-        vertexInfo.vertexAttributeDescriptionCount = 0;
+        vertexInfo.vertexBindingDescriptionCount = 1;
+        vertexInfo.vertexAttributeDescriptionCount = 2;
+        vertexInfo.pVertexAttributeDescriptions = attributeDescription;
+        vertexInfo.pVertexBindingDescriptions = &bindingDescription;
 
         VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
         inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;

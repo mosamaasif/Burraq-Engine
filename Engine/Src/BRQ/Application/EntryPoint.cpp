@@ -6,6 +6,10 @@
 #include "Input.h"
 
 #include "Graphics/Renderer.h"
+#include "Graphics/Mesh.h"
+
+#include "Platform/Vulkan/VKVertexBuffer.h"
+#include "Platform/Vulkan/VKIndexBuffer.h"
 
 int main() {
 
@@ -16,13 +20,7 @@ int main() {
 
 	Window* window = Window::Create();
 
-	auto input = Input::GetInstance();
-
 	FileSystem::Init();
-
-
-	auto filesystem = FileSystem::GetInstance();
-
 
 	Renderer::SubmitResources({ {"Src/Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
 								{"Src/Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
@@ -30,14 +28,14 @@ int main() {
 	Renderer::Init(window);
 	auto renderer = Renderer::GetInstance();
 
+
+
 	while (window->IsOpen()) {
 
-	
 		renderer->Present();
 		window->OnUpdate();
 	}
 
-	
 	Renderer::Shutdown();
 
 	delete window;

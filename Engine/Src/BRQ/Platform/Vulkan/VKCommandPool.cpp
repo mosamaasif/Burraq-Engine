@@ -42,7 +42,7 @@ namespace BRQ {
 
 		commandBuffers.clear();
 
-		vkFreeCommandBuffers(m_Device->GetLogicalDevice(), m_CommandPool, buffers.size(), buffers.data());
+		vkFreeCommandBuffers(m_Device->GetLogicalDevice(), m_CommandPool, (U32)buffers.size(), buffers.data());
 	}
 
 	void VKCommandPool::Reset() {
