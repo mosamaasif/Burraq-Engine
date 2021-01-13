@@ -6,21 +6,21 @@
 
 namespace BRQ {
 
-	class VKDevice;
+    class VKDevice;
 
-	class VKSemaphore {
+    class VKSemaphore {
 
-	private:
-		VkSemaphore		m_Semaphore;
-		const VKDevice* m_Device;
+    private:
+        VkSemaphore		m_Semaphore;
+        const VKDevice* m_Device;
 
-	public:
-		VKSemaphore();
-		~VKSemaphore() = default;
+    public:
+        VKSemaphore();
+        ~VKSemaphore() = default;
 
-		const VkSemaphore& GetSemaphore() const { return m_Semaphore; }
+        const VkSemaphore& GetSemaphore() const { return m_Semaphore; }
 
-		void Create(const VKDevice* device);
-		void Destroy();
-	};
+        void Create(const VKDevice* device);
+        void Destroy();
+    };
 }

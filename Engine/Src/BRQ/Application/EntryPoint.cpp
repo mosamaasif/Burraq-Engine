@@ -13,35 +13,35 @@
 
 int main() {
 
-	using namespace BRQ;
-	using namespace Utilities;
+    using namespace BRQ;
+    using namespace Utilities;
 
-	Log::Init();
+    Log::Init();
 
-	Window* window = Window::Create();
+    Window* window = Window::Create();
 
-	FileSystem::Init();
+    FileSystem::Init();
 
-	Renderer::SubmitResources({ {"Src/Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
-								{"Src/Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
+    Renderer::SubmitResources({ {"Src/Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
+                                {"Src/Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
 
-	Renderer::Init(window);
-	auto renderer = Renderer::GetInstance();
+    Renderer::Init(window);
+    auto renderer = Renderer::GetInstance();
 
+    auto input = Input::GetInstance();
 
+    while (window->IsOpen()) {
 
-	while (window->IsOpen()) {
+        renderer->Present();
+        window->OnUpdate();
+    }
 
-		renderer->Present();
-		window->OnUpdate();
-	}
+    Renderer::Shutdown();
 
-	Renderer::Shutdown();
+    delete window;
 
-	delete window;
+    FileSystem::Shutdown();
+    Log::Shutdown();
 
-	FileSystem::Shutdown();
-	Log::Shutdown();
-
-	return 0;
+    return 0;
 }

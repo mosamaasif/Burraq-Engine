@@ -16,27 +16,27 @@ namespace BRQ {
 
     class Window {
 
-	public:
-		typedef void* WindowHandle;
+    public:
+        typedef void* WindowHandle;
 
-	protected:
-		bool m_Open;
+    protected:
+        bool m_Open;
 
-	protected:
-		Window();
+    protected:
+        Window();
 
-	public:
-		virtual ~Window() = default;
+    public:
+        virtual ~Window() = default;
 
-		virtual void OnUpdate() = 0;
+        virtual void OnUpdate() = 0;
 
-		virtual U32 GetWidth() const = 0;
-		virtual U32 GetHeight() const = 0;
+        virtual U32 GetWidth() const = 0;
+        virtual U32 GetHeight() const = 0;
 
-		virtual WindowHandle GetNativeWindowHandle() const = 0;
+        virtual WindowHandle GetNativeWindowHandle() const = 0;
 
-		bool IsOpen() const { return m_Open; }
+        bool IsOpen() const { return m_Open; }
 
-		static Window* Create(const WindowProperties& properties = WindowProperties());
+        static Window* Create(const WindowProperties& properties = WindowProperties());
     };
 }

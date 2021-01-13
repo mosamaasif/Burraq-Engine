@@ -7,27 +7,28 @@
 
 namespace BRQ {
 
-	class VKDevice;
+    class VKDevice;
 
-	class VKCommandPool {
+    class VKCommandPool {
 
-	private:
-		VkCommandPool		m_CommandPool;
-		const VKDevice*		m_Device;
+    private:
+        VkCommandPool		m_CommandPool;
+        const VKDevice*		m_Device;
 
-	public:
-		VKCommandPool();
-		~VKCommandPool() = default;
+    public:
+        VKCommandPool();
+        ~VKCommandPool() = default;
 
-		const VkCommandPool& GetCommandPool() const { return m_CommandPool; }
+        const VkCommandPool& GetCommandPool() const { return m_CommandPool; }
 
-		std::vector<VKCommandBuffer> AllocateCommandBuffers(U64 count);
+        std::vector<VKCommandBuffer> AllocateCommandBuffers(U64 count);
 
-		void FreeCommandBuffers(std::vector<VKCommandBuffer>& commandBuffers);
+        void FreeCommandBuffers(std::vector<VKCommandBuffer>& commandBuffers);
+        void FreeCommandBuffer(VKCommandBuffer& commandBuffer);
 
-		void Reset();
+        void Reset();
 
-		void Create(const VKDevice* device);
-		void Destroy();
-	};
+        void Create(const VKDevice* device);
+        void Destroy();
+    };
 }

@@ -43,6 +43,7 @@ namespace BRQ {
 
         U32 GetGraphicsFamilyQueueIndex() const { return m_GraphicsQueueIndex; }
         U32 GetPresentationFamilyQueueIndex() const { return m_PresentationQueueIndex; }
+
     private:
         void SelectPhysicalDevice(const VkInstance* vkInstance, const VkSurfaceKHR* surface);
         void CreateLogicalDevice(const VkSurfaceKHR* surface);

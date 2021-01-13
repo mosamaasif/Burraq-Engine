@@ -7,7 +7,7 @@
 #include "VKSemaphore.h"
 #include "VKFramebuffer.h"
 
-#define MAX_FRAMES_IN_FLIGHT 2
+#define FRAME_LAG 2
 
 namespace BRQ {
 
@@ -33,29 +33,26 @@ namespace BRQ {
         const Window*               m_Window;
         std::vector<VkImage>        m_SwapchainImages;
         std::vector<VkImageView>    m_SwapchainImageViews;
-        std::vector<VKFramebuffer>  m_Framebuffers;
+        std::vector<VKFramebuffer>  m_SwapchainFramebuffers;
         U32                         m_CurrentImageIndex;
         U32                         m_AcquiredNextImageIndex;
+        VkExtent2D                  m_Dimensions;
+        VkSurfaceFormatKHR          m_SurfaceFormat;
         SwapchainStatus             m_SwapchainStatus;
 
     public:
         VKSwapchain();
         ~VKSwapchain() = default;
 
-        VkFormat GetSurfaceFormat() const { return ChooseSwapchainFormat().format; }
-        VkExtent2D GetSwapchainExtent2D() const { return ChooseSwapchainExtent2D(); }
+        VkFormat GetSurfaceFormat() const { return m_SurfaceFormat.format; }
+        const VkExtent2D& GetSwapchainExtent2D() const { return m_Dimensions; }
 
         SwapchainStatus GetSwapchainStatus() const { return m_SwapchainStatus; }
 
-        void CreateFramebuffers(const VKRenderPass* renderPass);
-        void DestoryFramebuffers();
-
         const VkSwapchainKHR& GetSwapchain() const { return m_Swapchain; }
 
-        const std::vector<VkImageView> GetSwapchainImageViews() const { return m_SwapchainImageViews; }
-        const std::vector<VkImage> GetSwapchainImage() const { return m_SwapchainImages; }
-
-        const std::vector<VKFramebuffer>& GetFramebuffers() const { return m_Framebuffers; }
+        const std::vector<VkImageView>& GetSwapchainImageViews() const { return m_SwapchainImageViews; }
+        const std::vector<VkImage>& GetSwapchainImage() const { return m_SwapchainImages; }
 
         // GetAcquiredNextImageIndex MUST be called after AcquiredNextImageIndex;
         U32 GetAcquiredNextImageIndex() const { return m_AcquiredNextImageIndex; }
@@ -67,6 +64,11 @@ namespace BRQ {
 
         void Create(const VKDevice* device, const VKSurface* surface, const Window* window);
         void Destroy();
+
+        void CreateSwapchainFramebuffers(const VKRenderPass* renderPass);
+        void DestroySwapchainFramebuffers();
+
+        const std::vector<VKFramebuffer>& GetSwapchainFramebuffers() const { return m_SwapchainFramebuffers; }
 
     private:
         VkExtent2D ChooseSwapchainExtent2D() const;

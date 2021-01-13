@@ -17,6 +17,9 @@ namespace BRQ {
 
         const VkBuffer& GetVertexBuffer() const { return m_BufferInfo.Buffer; }
 
+        const VulkanMemoryAllocator::BufferInfo& GetBufferInfo() const { return m_BufferInfo; }
+        VulkanMemoryAllocator::BufferInfo& GetBufferInfo() { return m_BufferInfo; }
+
         void Create(const std::vector<Vertex>& vertexData);
         void Destroy();
     };

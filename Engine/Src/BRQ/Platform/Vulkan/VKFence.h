@@ -6,26 +6,26 @@
 
 namespace BRQ {
 
-	class VKDevice;
+    class VKDevice;
 
-	class VKFence {
+    class VKFence {
 
-	private:
-		VkFence m_Fence;
-		const VKDevice* m_Device;
+    private:
+        VkFence m_Fence;
+        const VKDevice* m_Device;
 
-	public:
-		VKFence();
-		~VKFence() = default;
+    public:
+        VKFence();
+        ~VKFence() = default;
 
-		const VkFence& GetFence() const { return m_Fence; }
+        const VkFence& GetFence() const { return m_Fence; }
 
-		void Create(const VKDevice* device);
-		void Destroy();
+        void Create(const VKDevice* device);
+        void Destroy();
 
-		void Wait();
-		void Reset();
+        void Wait();
+        void Reset();
 
-		void operator = (const VKFence& fence);
-	};
+        void operator = (const VKFence& fence);
+    };
 }

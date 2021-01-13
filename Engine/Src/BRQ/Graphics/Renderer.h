@@ -15,7 +15,6 @@
 #include "Platform/Vulkan/VKPipelineLayout.h"
 #include "Platform/Vulkan/VKGraphicsPipeline.h"
 
-
 namespace BRQ {
 
     class Renderer {
@@ -31,14 +30,13 @@ namespace BRQ {
         VKRenderPass*												        m_RenderPass;
         VKPipelineLayout*											        m_Layout;
         VKGraphicsPipeline*											        m_GraphicsPipeline;
-        VKCommandPool*                                                      m_CommandPool;
         const Window*												        m_Window;
 
+        std::vector<VKCommandPool>                                          m_CommandPools;
         std::vector<VKCommandBuffer>								        m_CommandBuffers;
         std::vector<VKSemaphore>									        m_ImageAvailableSemaphores;
         std::vector<VKSemaphore>									        m_RenderFinishedSemaphores;
-        std::vector<VKFence>										        m_InFlightFences;
-        std::vector<VKFence>										        m_ImagesInFlightFences;
+        std::vector<VKFence>										        m_CommandBufferExecutedFences;
         std::vector<VKShader>										        m_Shaders;
 
     protected:
@@ -73,5 +71,35 @@ namespace BRQ {
 
         void LoadShaderResources();
         void DestroyShaderRescources();
+
+        void CreateInstance();
+        void DestroyInstance();
+
+        void CreateSurface();
+        void DestroySurface();
+
+        void CreateDevice();
+        void DestroyDevice();
+
+        void CreateSwapchain();
+        void DestroySwapchain();
+
+        void CreateRenderPass();
+        void DestroyRenderPass();
+
+        void CreateFramebuffers();
+        void DestroyFramebuffers();
+
+        void CreatePipelineLayout();
+        void DestroyPipelineLayout();
+
+        void CreateGraphicsPipeline();
+        void DestroyGraphicsPipeline();
+
+        void CreateCommands();
+        void DestroyCommands();
+
+        void CreateSyncronizationPrimitives();
+        void DestroySyncronizationPrimitives();
     };
 }

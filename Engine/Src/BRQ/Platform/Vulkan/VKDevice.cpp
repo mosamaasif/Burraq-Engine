@@ -113,13 +113,13 @@ namespace BRQ {
         info.enabledLayerCount = 0;
 
 #ifdef BRQ_DEBUG
-        const char* layers[] = { "VK_LAYER_KHRONOS_validation" };
-        info.ppEnabledLayerNames = layers;
-        info.enabledLayerCount = sizeof(layers) / sizeof(layers[0]);
+        std::vector<const char*> layers = { "VK_LAYER_KHRONOS_validation" };
+        info.ppEnabledLayerNames = layers.data();
+        info.enabledLayerCount = layers.size();
 #endif
-        const char* extensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
-        info.ppEnabledExtensionNames = extensions;
-        info.enabledExtensionCount = sizeof(extensions) / sizeof(extensions[0]);
+        std::vector<const char*> extensions = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
+        info.ppEnabledExtensionNames = extensions.data();
+        info.enabledExtensionCount = extensions.size();
 
         VK_CHECK(vkCreateDevice(m_PhysicalDevice, &info, nullptr, &m_LogicalDevice));
 

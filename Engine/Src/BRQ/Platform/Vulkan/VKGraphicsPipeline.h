@@ -5,32 +5,32 @@
 
 namespace BRQ {
 
-	class VKDevice;
-	class VKSwapchain;
-	class VKRenderPass;
-	class VKPipelineLayout;
-	class VKCommandBuffer;
+    class VKDevice;
+    class VKSwapchain;
+    class VKRenderPass;
+    class VKPipelineLayout;
+    class VKCommandBuffer;
 
-	class VKGraphicsPipeline {
+    class VKGraphicsPipeline {
 
-	private:
-		VkPipeline			m_GraphicsPipeline;
-		const VKDevice*		m_Device;
+    private:
+        VkPipeline			m_GraphicsPipeline;
+        const VKDevice*		m_Device;
 
-	public:
-		VKGraphicsPipeline();
-		~VKGraphicsPipeline() = default;
+    public:
+        VKGraphicsPipeline();
+        ~VKGraphicsPipeline() = default;
 
-		void Bind(const VKCommandBuffer* commandBuffer);
+        void Bind(const VKCommandBuffer* commandBuffer);
 
-		const VkPipeline& GetGraphicsPipeline() const { return m_GraphicsPipeline; }
+        const VkPipeline& GetGraphicsPipeline() const { return m_GraphicsPipeline; }
 
-		void Create(const VKDevice* device,
-					const VKSwapchain* swapchain,
-					const VKPipelineLayout* layout,
-					const VKRenderPass* renderpass,
-					const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages);
+        void Create(const VKDevice* device,
+                    const VKSwapchain* swapchain,
+                    const VKPipelineLayout* layout,
+                    const VKRenderPass* renderpass,
+                    const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages);
 
-		void Destroy();
-	};
+        void Destroy();
+    };
 }

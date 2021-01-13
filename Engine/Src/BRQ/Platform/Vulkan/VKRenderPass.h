@@ -4,28 +4,28 @@
 
 namespace BRQ {
 
-	class VKDevice;
-	class VKSwapchain;
-	class VKFramebuffer;
-	class VKCommandBuffer;
+    class VKDevice;
+    class VKSwapchain;
+    class VKFramebuffer;
+    class VKCommandBuffer;
 
-	class VKRenderPass {
+    class VKRenderPass {
 
-	private:
-		VkRenderPass		m_RenderPass;
-		const VKDevice*		m_Device;
-		const VKSwapchain*	m_Swapchain;
+    private:
+        VkRenderPass		m_RenderPass;
+        const VKDevice*		m_Device;
+        const VKSwapchain*	m_Swapchain;
 
-	public:
-		VKRenderPass();
-		~VKRenderPass() = default;
+    public:
+        VKRenderPass();
+        ~VKRenderPass() = default;
 
-		const VkRenderPass& GetRenderPass() const { return m_RenderPass; }
+        const VkRenderPass& GetRenderPass() const { return m_RenderPass; }
 
-		void Begin(const VKCommandBuffer* commandBuffer, const VKFramebuffer* framebuffer);
-		void End(const VKCommandBuffer* commandBuffer);
+        void Begin(const VKCommandBuffer* commandBuffer, const VKFramebuffer* framebuffer);
+        void End(const VKCommandBuffer* commandBuffer);
 
-		void Create(const VKDevice* device, const VKSwapchain* swapchain);
-		void Destroy();
-	};
+        void Create(const VKDevice* device, const VKSwapchain* swapchain);
+        void Destroy();
+    };
 }

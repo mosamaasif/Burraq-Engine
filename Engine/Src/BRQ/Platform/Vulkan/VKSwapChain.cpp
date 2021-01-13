@@ -12,7 +12,8 @@ namespace BRQ {
 
     VKSwapchain::VKSwapchain()
         : m_Swapchain(VK_NULL_HANDLE), m_Surface(nullptr), m_Device(nullptr), m_Window(nullptr),
-        m_CurrentImageIndex(0), m_AcquiredNextImageIndex(0), m_SwapchainStatus(SwapchainStatus::NotReady) { }
+        m_CurrentImageIndex(0), m_AcquiredNextImageIndex(0), m_SwapchainStatus(SwapchainStatus::NotReady),
+        m_SurfaceFormat({}), m_Dimensions({}) { }
 
     void VKSwapchain::AcquireNextImageIndex(const VKSemaphore* imageAvailabeSemaphore) {
         
@@ -26,7 +27,6 @@ namespace BRQ {
 
             VK_CHECK(result);
         }
-
     }
 
     void VKSwapchain::Present(const VKSemaphore* signalSemaphore) {
@@ -39,9 +39,18 @@ namespace BRQ {
         info.pSwapchains = &m_Swapchain;
         info.pImageIndices = &m_AcquiredNextImageIndex;
 
-        vkQueuePresentKHR(m_Device->GetPresentationFamilyQueue(), &info);
+        VkResult result = vkQueuePresentKHR(m_Device->GetPresentationFamilyQueue(), &info);
 
-        m_CurrentImageIndex = (m_CurrentImageIndex + 1) % MAX_FRAMES_IN_FLIGHT;
+        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
+
+            m_SwapchainStatus = SwapchainStatus::NotReady;
+        }
+        else {
+
+            VK_CHECK(result);
+        }
+
+        m_CurrentImageIndex = (m_CurrentImageIndex + 1) % FRAME_LAG;
     }
 
     void VKSwapchain::Create(const VKDevice* device, const VKSurface* surface, const Window* window) {
@@ -54,6 +63,9 @@ namespace BRQ {
         VkPresentModeKHR presentMode = ChooseSwapchainPresentMode();
         VkExtent2D extent = ChooseSwapchainExtent2D();
 
+        m_Dimensions = extent;
+        m_SurfaceFormat = surfaceFormat;
+
         auto capabilities = m_Surface->GetSurfaceCapabilities(m_Device);
 
         U32 imageCount = capabilities.minImageCount + 1;
@@ -62,6 +74,8 @@ namespace BRQ {
 
             imageCount = capabilities.maxImageCount;
         }
+
+        BRQ_CORE_ASSERT(imageCount >= FRAME_LAG);
 
         VkSwapchainCreateInfoKHR info = {};
         info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
@@ -93,9 +107,24 @@ namespace BRQ {
         info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
         info.presentMode = presentMode;
         info.clipped = VK_TRUE;
-        info.oldSwapchain = VK_NULL_HANDLE;
+        info.oldSwapchain = m_Swapchain;
+
+        VkSwapchainKHR old = m_Swapchain;
 
         VK_CHECK(vkCreateSwapchainKHR(m_Device->GetLogicalDevice(), &info, nullptr, &m_Swapchain));
+
+        if (old != VK_NULL_HANDLE) {
+
+            for (VkImageView view : m_SwapchainImageViews) {
+
+                vkDestroyImageView(m_Device->GetLogicalDevice(), view, nullptr);
+            }
+
+            m_SwapchainImageViews.clear();
+            m_SwapchainImages.clear();
+
+            vkDestroySwapchainKHR(m_Device->GetLogicalDevice(), old, nullptr);
+        }
 
         VK_CHECK(vkGetSwapchainImagesKHR(m_Device->GetLogicalDevice(), m_Swapchain, &imageCount, nullptr));
         m_SwapchainImages.resize(imageCount);
@@ -129,6 +158,17 @@ namespace BRQ {
     }
 
     void VKSwapchain::Destroy() {
+
+        for (auto& i : m_SwapchainImageViews) {
+
+            if (i) {
+
+                vkDestroyImageView(m_Device->GetLogicalDevice(), i, nullptr);
+            }
+        }
+
+        m_SwapchainImages.clear();
+        m_SwapchainImageViews.clear();
 
         if (m_Swapchain) {
 
@@ -164,14 +204,43 @@ namespace BRQ {
 
        auto formats = m_Surface->GetSurfaceFormat(m_Device);
 
-       for (const auto& format : formats) {
+       VkSurfaceFormatKHR format;
 
-           if (format.format == VK_FORMAT_B8G8R8A8_SRGB && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR) {
-               return format;
+       if (formats.size() == 1 && formats[0].format == VK_FORMAT_UNDEFINED) {
+
+           format = formats[0];
+           format.format = VK_FORMAT_B8G8R8A8_UNORM;
+       }
+       else {
+
+           format.format = VK_FORMAT_UNDEFINED;
+
+           for (auto& candidate : formats) {
+
+               switch (candidate.format) {
+
+               case VK_FORMAT_R8G8B8A8_UNORM:
+               case VK_FORMAT_B8G8R8A8_UNORM:
+               case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+                   format = candidate;
+                   break;
+
+               default:
+                   break;
+               }
+
+               if (format.format != VK_FORMAT_UNDEFINED) {
+
+                   break;
+               }
+           }
+
+           if (format.format == VK_FORMAT_UNDEFINED) {
+
+               format = formats[0];
            }
        }
-
-       return formats[0];
+       return format;
     }
 
     VkPresentModeKHR VKSwapchain::ChooseSwapchainPresentMode() const {
@@ -189,34 +258,23 @@ namespace BRQ {
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    void VKSwapchain::CreateFramebuffers(const VKRenderPass* renderPass) {
+    void VKSwapchain::CreateSwapchainFramebuffers(const VKRenderPass* renderPass) {
 
-        m_Framebuffers.resize(m_SwapchainImageViews.size());
+        m_SwapchainFramebuffers.resize(m_SwapchainImageViews.size());
 
         for (U64 i = 0; i < m_SwapchainImageViews.size(); i++) {
 
-            m_Framebuffers[i].Create(m_Device, this, renderPass, &m_SwapchainImageViews[i]);
+            m_SwapchainFramebuffers[i].Create(m_Device, this, renderPass, &m_SwapchainImageViews[i]);
         }
     }
 
-    void VKSwapchain::DestoryFramebuffers() {
+    void VKSwapchain::DestroySwapchainFramebuffers() {
 
-        for (auto& i : m_Framebuffers) {
+        for (auto& i : m_SwapchainFramebuffers) {
 
             i.Destroy();
         }
 
-        for (auto& i : m_SwapchainImageViews) {
-
-            if (i) {
-
-                vkDestroyImageView(m_Device->GetLogicalDevice(), i, nullptr);
-                i = VK_NULL_HANDLE;
-            }
-        }
-
-        m_Framebuffers.clear();
-        m_SwapchainImages.clear();
-        m_SwapchainImageViews.clear();
+        m_SwapchainFramebuffers.clear();
     }
 }

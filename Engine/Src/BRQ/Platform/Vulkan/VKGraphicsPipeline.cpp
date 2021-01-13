@@ -12,17 +12,17 @@
 
 namespace BRQ {
 
-	VKGraphicsPipeline::VKGraphicsPipeline()
-		: m_GraphicsPipeline(VK_NULL_HANDLE), m_Device(nullptr) { }
+    VKGraphicsPipeline::VKGraphicsPipeline()
+        : m_GraphicsPipeline(VK_NULL_HANDLE), m_Device(nullptr) { }
 
     void VKGraphicsPipeline::Bind(const VKCommandBuffer* commandBuffer) {
 
         vkCmdBindPipeline(commandBuffer->GetCommandBuffer(), VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
     }
 
-	void VKGraphicsPipeline::Create(const VKDevice* device, const VKSwapchain* swapchain, const VKPipelineLayout* layout,
+    void VKGraphicsPipeline::Create(const VKDevice* device, const VKSwapchain* swapchain, const VKPipelineLayout* layout,
         const VKRenderPass* renderpass, const std::vector<VkPipelineShaderStageCreateInfo>& shaderStages) {
-		
+        
         m_Device = device;
 
         VkVertexInputBindingDescription bindingDescription = {};
@@ -42,7 +42,6 @@ namespace BRQ {
         attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
         attributeDescription[1].offset = offsetof(Vertex, normals);
 
-
         VkPipelineVertexInputStateCreateInfo vertexInfo = {};
         vertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInfo.vertexBindingDescriptionCount = 1;
@@ -55,26 +54,10 @@ namespace BRQ {
         inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
         inputAssembly.primitiveRestartEnable = VK_FALSE;
 
-        VkExtent2D extent = swapchain->GetSwapchainExtent2D();
-
-        VkViewport viewport = {};
-        viewport.x = 0.0f;
-        viewport.y = 0.0f;
-        viewport.width = (float)extent.width;
-        viewport.height = (float)extent.height;
-        viewport.minDepth = 0.0f;
-        viewport.maxDepth = 1.0f;
-
-        VkRect2D scissor = {};
-        scissor.offset = { 0, 0 };
-        scissor.extent = extent;
-
         VkPipelineViewportStateCreateInfo viewportState = {};
         viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
         viewportState.viewportCount = 1;
-        viewportState.pViewports = &viewport;
         viewportState.scissorCount = 1;
-        viewportState.pScissors = &scissor;
 
         VkPipelineRasterizationStateCreateInfo rasterizer = {};
         rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
@@ -108,6 +91,13 @@ namespace BRQ {
 
         const auto& stages = VKShader::GetVulkanShaderStageInfo();
 
+        std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+        VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+        dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicStateInfo.pDynamicStates = dynamicStates.data();
+        dynamicStateInfo.dynamicStateCount = dynamicStates.size();
+
         VkGraphicsPipelineCreateInfo info = {};
         info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
         info.stageCount = (U32)stages.size();
@@ -118,20 +108,21 @@ namespace BRQ {
         info.pRasterizationState = &rasterizer;
         info.pMultisampleState = &multisampling;
         info.pColorBlendState = &colorBlending;
-        info.layout = layout->GetVulkanPipelineLayout();
+        info.layout = layout->GetPipelineLayout();
         info.renderPass = renderpass->GetRenderPass();
         info.subpass = 0;
         info.basePipelineHandle = VK_NULL_HANDLE;
+        info.pDynamicState = &dynamicStateInfo;
 
         VK_CHECK(vkCreateGraphicsPipelines(device->GetLogicalDevice(), VK_NULL_HANDLE, 1, &info, nullptr, &m_GraphicsPipeline));    
-	}
+    }
 
-	void VKGraphicsPipeline::Destroy() {
+    void VKGraphicsPipeline::Destroy() {
 
         if (m_GraphicsPipeline) {
 
             vkDestroyPipeline(m_Device->GetLogicalDevice(), m_GraphicsPipeline, nullptr);
             m_GraphicsPipeline = VK_NULL_HANDLE;
         }
-	}
+    }
 }

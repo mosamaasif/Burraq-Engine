@@ -5,69 +5,76 @@
 
 namespace BRQ {
 
-	VKCommandPool::VKCommandPool()
-		: m_CommandPool(VK_NULL_HANDLE), m_Device(nullptr) { }
+    VKCommandPool::VKCommandPool()
+        : m_CommandPool(VK_NULL_HANDLE), m_Device(nullptr) { }
 
-	std::vector<VKCommandBuffer> VKCommandPool::AllocateCommandBuffers(U64 count) {
+    std::vector<VKCommandBuffer> VKCommandPool::AllocateCommandBuffers(U64 count) {
 
-		BRQ_CORE_ASSERT(count);
+        BRQ_CORE_ASSERT(count);
 
-		std::vector<VkCommandBuffer> buffers(count);
-		std::vector<VKCommandBuffer> result(count);
+        std::vector<VkCommandBuffer> buffers(count);
+        std::vector<VKCommandBuffer> result(count);
 
-		VkCommandBufferAllocateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		info.commandPool = m_CommandPool;
-		info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-		info.commandBufferCount = (U32)count;
+        VkCommandBufferAllocateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
+        info.commandPool = m_CommandPool;
+        info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        info.commandBufferCount = (U32)count;
 
-		VK_CHECK(vkAllocateCommandBuffers(m_Device->GetLogicalDevice(), &info, buffers.data()));
+        VK_CHECK(vkAllocateCommandBuffers(m_Device->GetLogicalDevice(), &info, buffers.data()));
 
-		for (U64 i = 0; i < buffers.size(); i++) {
+        for (U64 i = 0; i < buffers.size(); i++) {
 
-			result[i].m_CommandBuffer = buffers[i];
-		}
+            result[i].m_CommandBuffer = buffers[i];
+        }
 
-		return std::move(result);
-	}
+        return std::move(result);
+    }
 
-	void VKCommandPool::FreeCommandBuffers(std::vector<VKCommandBuffer>& commandBuffers) {
+    void VKCommandPool::FreeCommandBuffers(std::vector<VKCommandBuffer>& commandBuffers) {
 
-		std::vector<VkCommandBuffer> buffers(commandBuffers.size());
+        std::vector<VkCommandBuffer> buffers(commandBuffers.size());
 
-		for (U64 i = 0; i < buffers.size(); i++) {
+        for (U64 i = 0; i < buffers.size(); i++) {
 
-			buffers[i] = commandBuffers[i].GetCommandBuffer();
-		}
+            buffers[i] = commandBuffers[i].GetCommandBuffer();
+            commandBuffers[i].m_CommandBuffer = VK_NULL_HANDLE;
+        }
 
-		commandBuffers.clear();
+        commandBuffers.clear();
 
-		vkFreeCommandBuffers(m_Device->GetLogicalDevice(), m_CommandPool, (U32)buffers.size(), buffers.data());
-	}
+        vkFreeCommandBuffers(m_Device->GetLogicalDevice(), m_CommandPool, (U32)buffers.size(), buffers.data());
+    }
 
-	void VKCommandPool::Reset() {
+    void VKCommandPool::FreeCommandBuffer(VKCommandBuffer& commandBuffer) {
 
-		VK_CHECK(vkResetCommandPool(m_Device->GetLogicalDevice(), m_CommandPool, 0));
-	}
+        vkFreeCommandBuffers(m_Device->GetLogicalDevice(), m_CommandPool, 1, &commandBuffer.GetCommandBuffer());
+        commandBuffer.m_CommandBuffer = VK_NULL_HANDLE;
+    }
 
-	void VKCommandPool::Create(const VKDevice* device) {
+    void VKCommandPool::Reset() {
 
-		m_Device = device;
+        VK_CHECK(vkResetCommandPool(m_Device->GetLogicalDevice(), m_CommandPool, 0));
+    }
 
-		VkCommandPoolCreateInfo info = {};
-		info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		info.queueFamilyIndex = m_Device->GetGraphicsFamilyQueueIndex();
-		info.flags = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    void VKCommandPool::Create(const VKDevice* device) {
 
-		VK_CHECK(vkCreateCommandPool(m_Device->GetLogicalDevice(), &info, nullptr, &m_CommandPool));
-	}
+        m_Device = device;
 
-	void VKCommandPool::Destroy() {
+        VkCommandPoolCreateInfo info = {};
+        info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
+        info.queueFamilyIndex = m_Device->GetGraphicsFamilyQueueIndex();
+        info.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
 
-		if (m_CommandPool) {
+        VK_CHECK(vkCreateCommandPool(m_Device->GetLogicalDevice(), &info, nullptr, &m_CommandPool));
+    }
 
-			vkDestroyCommandPool(m_Device->GetLogicalDevice(), m_CommandPool, nullptr);
-			m_CommandPool = VK_NULL_HANDLE;
-		}
-	}
+    void VKCommandPool::Destroy() {
+
+        if (m_CommandPool) {
+
+            vkDestroyCommandPool(m_Device->GetLogicalDevice(), m_CommandPool, nullptr);
+            m_CommandPool = VK_NULL_HANDLE;
+        }
+    }
 }
