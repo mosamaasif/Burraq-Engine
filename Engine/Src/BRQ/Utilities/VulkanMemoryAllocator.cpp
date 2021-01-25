@@ -3,28 +3,25 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanMemoryAllocator.h"
 
-#include "Platform/Vulkan/VKDevice.h"
-#include "Platform/Vulkan/VKInstance.h"
+#include "Platform/Vulkan/VKCommon.h"
 
 namespace BRQ {
 
     VulkanMemoryAllocator* VulkanMemoryAllocator::s_Instance = nullptr;
 
     VulkanMemoryAllocator::VulkanMemoryAllocator()
-        : m_Allocator(VMA_NULL), m_Device(nullptr) { }
+        : m_Allocator(VMA_NULL) { }
 
-    void VulkanMemoryAllocator::Init(const VKInstance* instance, const VKDevice* device) {
+    void VulkanMemoryAllocator::Init(const VulkanMemoryAllocatorCreateInfo& info) {
 
         s_Instance = new VulkanMemoryAllocator();
 
-        s_Instance->m_Device = device;
+        VmaAllocatorCreateInfo createInfo = {};
+        createInfo.instance = info.Instance;
+        createInfo.physicalDevice = info.PhysicalDevice;
+        createInfo.device = info.Device;
 
-        VmaAllocatorCreateInfo info = {};
-        info.physicalDevice = device->GetPhysicalDevice();
-        info.device = device->GetLogicalDevice();
-        info.instance = instance->GetInstance();
-
-        VK_CHECK(vmaCreateAllocator(&info, &s_Instance->m_Allocator));
+        VK_CHECK(vmaCreateAllocator(&createInfo, &s_Instance->m_Allocator));
     }
 
     void VulkanMemoryAllocator::Shutdown() {
@@ -69,6 +66,25 @@ namespace BRQ {
     void VulkanMemoryAllocator::DestroyBuffer(BufferInfo& bufferInfo) {
 
         vmaDestroyBuffer(m_Allocator, bufferInfo.Buffer, bufferInfo.Allocation);
+
+        bufferInfo.Buffer = VK_NULL_HANDLE;
+        bufferInfo.Allocation = nullptr;
     }
 
+    VulkanMemoryAllocator::ImageInfo VulkanMemoryAllocator::CreateImage(const VkImageCreateInfo& createInfo, const VmaAllocationCreateInfo& allocInfo) {
+
+        ImageInfo info = {};
+
+        VK_CHECK(vmaCreateImage(m_Allocator, &createInfo, &allocInfo, &info.Image, &info.Allocation, nullptr));
+
+        return info;
+    }
+
+    void VulkanMemoryAllocator::DestroyImage(ImageInfo& imageInfo) {
+
+        vmaDestroyImage(m_Allocator, imageInfo.Image, imageInfo.Allocation);
+
+        imageInfo.Image = VK_NULL_HANDLE;
+        imageInfo.Allocation = nullptr;
+    }
 }

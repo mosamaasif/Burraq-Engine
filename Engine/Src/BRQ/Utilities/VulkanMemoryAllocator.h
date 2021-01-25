@@ -4,23 +4,33 @@
 
 namespace BRQ {
 
-    class VKInstance;
-    class VKDevice;
+    struct VulkanMemoryAllocatorCreateInfo {
+
+        VkInstance          Instance = VK_NULL_HANDLE;
+        VkPhysicalDevice    PhysicalDevice = VK_NULL_HANDLE;
+        VkDevice            Device = VK_NULL_HANDLE;
+    };
 
     class VulkanMemoryAllocator {
 
     public:
         struct BufferInfo {
 
-            VkBuffer Buffer = VK_NULL_HANDLE;
-            VmaAllocation Allocation = nullptr;
+            VkBuffer        Buffer = VK_NULL_HANDLE;
+            VmaAllocation   Allocation = nullptr;
+        };
+
+        struct ImageInfo {
+
+            VkImage         Image = VK_NULL_HANDLE;
+            VmaAllocation   Allocation = nullptr;
         };
 
     private:
         static VulkanMemoryAllocator*   s_Instance;
-        VmaAllocator                    m_Allocator;
-        const VKDevice*                 m_Device;
 
+        VmaAllocator                    m_Allocator;
+ 
     protected:
         VulkanMemoryAllocator();
         VulkanMemoryAllocator(const VulkanMemoryAllocator& vma) = delete;
@@ -28,10 +38,8 @@ namespace BRQ {
     public:
         ~VulkanMemoryAllocator() = default;
 
-        static void Init(const VKInstance* instance, const VKDevice* device);
+        static void Init(const VulkanMemoryAllocatorCreateInfo& info = {});
         static void Shutdown();
-
-        const VKDevice* GetDevice() const { return m_Device; }
 
         VmaAllocationInfo GetAllocationInfo(const BufferInfo& info) const;
 
@@ -43,5 +51,7 @@ namespace BRQ {
         BufferInfo CreateBuffer(const VkBufferCreateInfo& createInfo, const VmaAllocationCreateInfo& allocInfo);
         void DestroyBuffer(BufferInfo& bufferInfo);
 
+        ImageInfo CreateImage(const VkImageCreateInfo& createInfo, const VmaAllocationCreateInfo& allocInfo);
+        void DestroyImage(ImageInfo& imageInfo);
     };
 }

@@ -6,12 +6,15 @@
 #include <fast_obj.h>
 #include <meshoptimizer.h>
 
+#include "Platform/Vulkan/RenderContext.h"
+
 namespace BRQ {
 
-    Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<U32>& indices)
-        : m_Vertices(vertices), m_Indices(indices) { }
+    Mesh::Mesh()
+        : m_VertexBuffer({}), m_IndexBuffer({}), m_VertexCount(0), m_IndexCount(0) { }
 
-    Mesh::Mesh(const std::string_view& filename) {
+    Mesh::Mesh(const std::string_view& filename)
+        : m_VertexBuffer({}), m_IndexBuffer({}), m_VertexCount(0), m_IndexCount(0) {
 
         LoadMesh(filename);
     }
@@ -43,12 +46,12 @@ namespace BRQ {
                 fastObjIndex gi = obj->indices[indexOffset + j];
 
                 Vertex v;
-                v.positions[0] =  obj->positions[gi.p * 3 + 0];
-                v.positions[1] = -obj->positions[gi.p * 3 + 1];
-                v.positions[2] =  obj->positions[gi.p * 3 + 2];
-                v.normals[0] = obj->normals[gi.n * 3 + 0];
-                v.normals[1] = obj->normals[gi.n * 3 + 1];
-                v.normals[2] = obj->normals[gi.n * 3 + 2];
+                v.x =  obj->positions[gi.p * 3 + 0];
+                v.y = -obj->positions[gi.p * 3 + 1];
+                v.z =  obj->positions[gi.p * 3 + 2];
+                v.nx = obj->normals[gi.n * 3 + 0];
+                v.ny = obj->normals[gi.n * 3 + 1];
+                v.nz = obj->normals[gi.n * 3 + 2];
 
                 if (j >= 3)
                 {
@@ -66,14 +69,50 @@ namespace BRQ {
 
         fast_obj_destroy(obj);
 
-        std::vector<unsigned int> remap(totalIndices);
+        std::vector<U32> remap(totalIndices);
 
         size_t total_vertices = meshopt_generateVertexRemap(&remap[0], NULL, totalIndices, &vertices[0], totalIndices, sizeof(Vertex));
 
-        m_Indices.resize(totalIndices);
-        meshopt_remapIndexBuffer(&m_Indices[0], NULL, totalIndices, &remap[0]);
+        std::vector<U32> indexBuffer(m_IndexCount = totalIndices);
+        meshopt_remapIndexBuffer(&indexBuffer[0], NULL, totalIndices, &remap[0]);
 
-        m_Vertices.resize(total_vertices);
-        meshopt_remapVertexBuffer(&m_Vertices[0], &vertices[0], totalIndices, sizeof(Vertex), &remap[0]);
+        std::vector<Vertex> vertexBuffer(m_VertexCount = total_vertices);
+        meshopt_remapVertexBuffer(&vertexBuffer[0], &vertices[0], totalIndices, sizeof(Vertex), &remap[0]);
+
+        VkDevice device = RenderContext::GetInstance()->GetDevice();
+        U32 queueIndex = RenderContext::GetInstance()->GetGraphicsAndPresentationQueueIndex();
+        VkQueue queue = RenderContext::GetInstance()->GetGraphicsAndPresentationQueue();
+
+        VK::BufferCreateInfo vertexCreateInfo = {};
+        vertexCreateInfo.Size = m_VertexCount * sizeof(Vertex);
+        vertexCreateInfo.Flags = 0;
+        vertexCreateInfo.Usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        vertexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        vertexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+        vertexCreateInfo.Data = vertexBuffer.data();
+        vertexCreateInfo.TransferQueueFamilyIndex = queueIndex;
+        vertexCreateInfo.TransferQueue = queue;
+
+        m_VertexBuffer = VK::CreateBuffer(device, vertexCreateInfo);
+
+        VK::BufferCreateInfo indexCreateInfo = {};
+        indexCreateInfo.Size = m_IndexCount * sizeof(U32);
+        indexCreateInfo.Flags = 0;
+        indexCreateInfo.Usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
+        indexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
+        indexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+        indexCreateInfo.Data = indexBuffer.data();
+        indexCreateInfo.TransferQueueFamilyIndex = queueIndex;
+        indexCreateInfo.TransferQueue = queue;
+
+        m_IndexBuffer = VK::CreateBuffer(device, indexCreateInfo);
+    }
+
+    void Mesh::DestroyMesh() {
+
+        VkDevice device = RenderContext::GetInstance()->GetDevice();
+
+        VK::DestoryBuffer(device, m_VertexBuffer);
+        VK::DestoryBuffer(device, m_IndexBuffer);
     }
 }

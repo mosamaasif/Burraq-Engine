@@ -5,25 +5,22 @@
 #include "Application/Window.h"
 #include "Utilities/VulkanMemoryAllocator.h"
 
-#include "Platform/Vulkan/VKIndexBuffer.h"
-#include "Platform/Vulkan/VKVertexBuffer.h"
 #include "Graphics/Mesh.h"
+
+#include "Platform/Vulkan/RenderContext.h"
+#include "Platform/Vulkan/VKCommands.h"
 
 namespace BRQ {
 
 	// this shouldnt be here
 	Mesh mesh;
 
-	VKVertexBuffer vertexBuffer;
-	VKIndexBuffer indexBuffer;
-
 	Renderer* Renderer::s_Renderer = nullptr;
 	std::vector<std::pair<std::string, VKShader::ShaderType>> Renderer::s_ShaderResources;
 
 	Renderer::Renderer()
-		: m_VulkanInstance(nullptr), m_Surface(nullptr), m_Device(nullptr),
-		m_Swapchain(nullptr), m_RenderPass(nullptr), m_Layout(nullptr),
-		m_GraphicsPipeline(nullptr), m_Window(nullptr) { }
+		: m_RenderContext(nullptr), m_RenderPass(nullptr),
+		m_Layout(nullptr), m_GraphicsPipeline(nullptr), m_Window(nullptr) { }
 
 	void Renderer::Init(const Window* window) {
 
@@ -39,46 +36,48 @@ namespace BRQ {
 		delete s_Renderer;
 	}
 
-	void Renderer::Begin()
-	{
-	}
-
-	void Renderer::End()
-	{
-	}
-
 	void Renderer::Present() {
 
-		U32 index = m_Swapchain->GetCurrentImageIndex();
+		U32 index = m_RenderContext->GetCurrentIndex();
 
-		m_CommandBufferExecutedFences[index].Wait();
-		m_CommandBufferExecutedFences[index].Reset();
+		VK::WaitForFence(m_RenderContext->GetDevice(), m_CommandBufferExecutedFences[index]);
+		VK::ResetFence(m_RenderContext->GetDevice(), m_CommandBufferExecutedFences[index]);
 
-		if (m_Swapchain->GetSwapchainStatus() == VKSwapchain::SwapchainStatus::NotReady) {
+		VK::ResetCommandPool(m_RenderContext->GetDevice(), m_CommandPools[index]);
+
+		VkCommandBuffer buffer = m_CommandBuffers[index];
+
+		U32 imageIndex = m_RenderContext->AcquireImageIndex(m_ImageAvailableSemaphores[index]);
+
+		if (m_RenderContext->GetSwapchainStatus() == VK::SwapchainStatus::NotReady) {
 
 			RecreateSwapchain();
-			return;
 		}
 
-		m_CommandPools[index].Reset();
+		VK::CommandBufferBeginInfo beginInfo = {};
+		beginInfo.CommandBuffer = buffer;
+		beginInfo.Flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
-		VKCommandBuffer* buffer = &m_CommandBuffers[index];
+		VK::CommandBufferBegin(beginInfo);
 
-		m_Swapchain->AcquireNextImageIndex(&m_ImageAvailableSemaphores[index]);
-		U32 imageIndex = m_Swapchain->GetAcquiredNextImageIndex();
+		VK::RenderPassBeginInfo info = {};
+		info.CommandBuffer = buffer;
+		info.RenderPass = m_RenderPass;
+		info.Framebuffer = m_Framebuffers[imageIndex];
+		info.RenderArea.extent = m_RenderContext->GetSwapchainExtent2D();
+		info.RenderArea.offset = { 0, 0 };
 
-		buffer->Begin();
-		m_RenderPass->Begin(buffer, &m_Swapchain->GetSwapchainFramebuffers()[imageIndex]);
+		VK::CommandBeginRenderPass(info);
 
-		m_GraphicsPipeline->Bind(buffer);
+		vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
 
-		VkExtent2D extent = m_Swapchain->GetSwapchainExtent2D();
+		VkExtent2D extent = m_RenderContext->GetSwapchainExtent2D();
 
 		VkViewport viewport = {};
 		viewport.x = 0.0f;
 		viewport.y = 0.0f;
-		viewport.width = extent.width;
-		viewport.height = extent.height;
+		viewport.width = (F32)extent.width;
+		viewport.height = (F32)extent.height;
 		viewport.minDepth = 0.0f;
 		viewport.maxDepth = 1.0f;
 
@@ -86,27 +85,38 @@ namespace BRQ {
 		scissor.offset = { 0, 0 };
 		scissor.extent = extent;
 
-		vkCmdSetViewport(buffer->GetCommandBuffer(), 0, 1, &viewport);
-		vkCmdSetScissor(buffer->GetCommandBuffer(), 0, 1, &scissor);
+		vkCmdSetViewport(buffer, 0, 1, &viewport);
+		vkCmdSetScissor(buffer, 0, 1, &scissor);
 
 		VkDeviceSize offset = 0;
-		vkCmdBindVertexBuffers(buffer->GetCommandBuffer(), 0, 1, &vertexBuffer.GetVertexBuffer(), &offset);
-		vkCmdBindIndexBuffer(buffer->GetCommandBuffer(), indexBuffer.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+		vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.GetVertexBuffer(), &offset);
+		vkCmdBindIndexBuffer(buffer, mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-		vkCmdDrawIndexed(buffer->GetCommandBuffer(), mesh.GetIndices().size(), 1, 0, 0, 0);
+		vkCmdDrawIndexed(buffer, (U32)mesh.GetIndexCount(), 1, 0, 0, 0);
 
-		m_RenderPass->End(buffer);
-		buffer->End();
+		VK::CommandEndRenderPass(buffer);
 
+		VK::CommandBufferEnd(buffer);
 
-		buffer->Submit(m_Device, &m_ImageAvailableSemaphores[index], &m_RenderFinishedSemaphores[index], &m_CommandBufferExecutedFences[index]);
+		VK::QueueSubmitInfo submitInfo = {};
+		submitInfo.WaitSemaphoreCount = 1;
+		submitInfo.WaitSemaphores = &m_ImageAvailableSemaphores[index];
+		submitInfo.WaitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+		submitInfo.CommandBufferCount = 1;
+		submitInfo.CommandBuffers = &buffer;
+		submitInfo.SignalSemaphoreCount = 1;
+		submitInfo.SignalSemaphores = &m_RenderFinishedSemaphores[index];
+		submitInfo.QueueFamilyIndex = m_RenderContext->GetGraphicsAndPresentationQueueIndex();
+		submitInfo.Queue = m_RenderContext->GetGraphicsAndPresentationQueue();
+		submitInfo.CommandBufferExecutedFence = m_CommandBufferExecutedFences[index];
 
-		m_Swapchain->Present(&m_RenderFinishedSemaphores[index]);
+		VK::QueueSubmit(submitInfo);
 
-		if (m_Swapchain->GetSwapchainStatus() == VKSwapchain::SwapchainStatus::NotReady) {
+		m_RenderContext->Present(m_RenderFinishedSemaphores[index]);
+
+		if (m_RenderContext->GetSwapchainStatus() == VK::SwapchainStatus::NotReady) {
 
 			RecreateSwapchain();
-			return;
 		}
 	}
 
@@ -114,10 +124,10 @@ namespace BRQ {
 
 		m_Window = window;
 
-		CreateInstance();
-		CreateSurface();
-		CreateDevice();
-		CreateSwapchain();
+		RenderContext::Init(window, { { VK::QueueType::Graphics, 1.0f } });
+
+		m_RenderContext = RenderContext::GetInstance();
+
 		CreateRenderPass();
 		CreateFramebuffers();
 		CreatePipelineLayout();
@@ -125,22 +135,14 @@ namespace BRQ {
 		CreateCommands();
 		CreateSyncronizationPrimitives();
 
-		VulkanMemoryAllocator::Init(m_VulkanInstance, m_Device);
-
-		mesh.LoadMesh("Src/Models/kitten.obj");
-		//mesh.LoadMesh("Src/Models/Mickeytest.obj");
-		//mesh.LoadMesh("Src/Models/pirate.obj");
-		vertexBuffer.Create(mesh.GetVertices());
-		indexBuffer.Create(mesh.GetIndices());
+		mesh.LoadMesh("Src/Models/monkey_flat.obj");
 	}
 
 	void Renderer::DestroyInternal() {
 
-		m_Device->WaitDeviceIdle();
+		vkDeviceWaitIdle(m_RenderContext->GetDevice());
 
-		VulkanMemoryAllocator::GetInstance()->DestroyBuffer(vertexBuffer.GetBufferInfo());
-		VulkanMemoryAllocator::GetInstance()->DestroyBuffer(indexBuffer.GetBufferInfo());
-		VulkanMemoryAllocator::Shutdown();
+		mesh.DestroyMesh();
 
 		DestroySyncronizationPrimitives();
 		DestroyCommands();
@@ -148,27 +150,18 @@ namespace BRQ {
 		DestroyPipelineLayout();
 		DestroyFramebuffers();
 		DestroyRenderPass();
-		DestroySwapchain();
-		DestroyDevice();
-		DestroySurface();
-		DestroyInstance();
+		
+		RenderContext::Destroy();
 	}
 
 	void Renderer::RecreateSwapchain() {
 
-		auto capabilities = m_Surface->GetSurfaceCapabilities(m_Device);
-		auto dimensions = m_Swapchain->GetSwapchainExtent2D();
-		
-		if (capabilities.currentExtent.width == dimensions.width && capabilities.currentExtent.height == dimensions.height) {
+		VK_CHECK(vkDeviceWaitIdle(m_RenderContext->GetDevice()));
 
-			return;
-		}
-
-		m_Device->WaitDeviceIdle();
-
-		m_Swapchain->DestroySwapchainFramebuffers();
-		m_Swapchain->Create(m_Device, m_Surface, m_Window);
-		m_Swapchain->CreateSwapchainFramebuffers(m_RenderPass);
+		DestroyFramebuffers();
+		m_RenderContext->UpdateSwapchain();
+		m_RenderContext->UpdateDepthResources();
+		CreateFramebuffers();
 	}
 
 	void Renderer::LoadShaderResources() {
@@ -179,7 +172,7 @@ namespace BRQ {
 
 			const auto& resource = s_ShaderResources[i];
 
-			m_Shaders[i].Create(m_Device, resource.first, resource.second);
+			m_Shaders[i].Create(m_RenderContext->GetDevice(), resource.first, resource.second);
 		}
 	}
 
@@ -191,139 +184,200 @@ namespace BRQ {
 		}
 	}
 
-	void Renderer::CreateInstance() {
-
-		m_VulkanInstance = new VKInstance();
-		m_VulkanInstance->Create();
-	}
-
-	void Renderer::DestroyInstance() {
-
-		if (m_VulkanInstance) {
-
-			m_VulkanInstance->Destroy();
-
-			delete m_VulkanInstance;
-			m_VulkanInstance = nullptr;
-		}
-	}
-
-	void Renderer::CreateSurface() {
-
-		m_Surface = new VKSurface();
-		m_Surface->Create(m_VulkanInstance, m_Window);
-	}
-
-	void Renderer::DestroySurface() {
-
-		if (m_Surface) {
-
-			m_Surface->Destroy();
-
-			delete m_Surface;
-			m_Surface = nullptr;
-		}
-	}
-
-	void Renderer::CreateDevice() {
-
-		m_Device = new VKDevice();
-		m_Device->Create(m_VulkanInstance, m_Surface);
-	}
-
-	void Renderer::DestroyDevice() {
-
-		if (m_Device) {
-
-			m_Device->Destroy();
-
-			delete m_Device;
-			m_Device = nullptr;
-		}
-	}
-
-	void Renderer::CreateSwapchain() {
-
-		m_Swapchain = new VKSwapchain();
-		m_Swapchain->Create(m_Device, m_Surface, m_Window);
-	}
-
-	void Renderer::DestroySwapchain() {
-
-		if (m_Swapchain) {
-
-			m_Swapchain->Destroy();
-			
-			delete m_Swapchain;
-			m_Swapchain = nullptr;
-		}
-	}
-
 	void Renderer::CreateRenderPass() {
 
-		m_RenderPass = new VKRenderPass();
-		m_RenderPass->Create(m_Device, m_Swapchain);
+		VK::AttachmentDescription depth = {};
+		depth.Format = VK::FindDepthImageFormat(m_RenderContext->GetPhysicalDevice());
+		depth.Samples = VK_SAMPLE_COUNT_1_BIT;
+		depth.LoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		depth.StoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth.StencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		depth.StencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		depth.InitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		depth.FinalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+		VK::AttachmentDescription color = {};
+		color.Format = m_RenderContext->GetSwapchainImageFormat();
+		color.Samples = VK_SAMPLE_COUNT_1_BIT;
+		color.LoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
+		color.StoreOp = VK_ATTACHMENT_STORE_OP_STORE;
+		color.StencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+		color.StencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+		color.InitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+		color.FinalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
+
+		VK::SubpassDescription subpass = {};
+		subpass.ColorAttachments = { VK::GetAttachmentReference({ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }) };
+		subpass.DepthStencilAttachment = VK::GetAttachmentReference({ 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
+		
+		VK::SubpassDependency dependency = {};
+		dependency.SrcSubpass = VK_SUBPASS_EXTERNAL;
+		dependency.DstSubpass = 0;
+		dependency.SrcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.SrcAccessMask = 0;
+		dependency.DstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
+		dependency.DstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+
+		VK::RenderPassCreateInfo info = {};
+		info.Attachments = { VK::GetAttachmentDescription(color), VK::GetAttachmentDescription(depth) };
+		info.Dependencies = { VK::GetSubpassDependency(dependency) };
+		info.Subpasses = { VK::GetSubpassDescription(subpass) };
+		
+		m_RenderPass = VK::CreateRenderPass(m_RenderContext->GetDevice(), info);
 	}
 
 	void Renderer::DestroyRenderPass() {
 
-		if (m_RenderPass) {
-
-			m_RenderPass->Destroy();
-
-			delete m_RenderPass;
-			m_RenderPass = nullptr;
-		}
+		VK::DestroyRenderPass(m_RenderContext->GetDevice(), m_RenderPass);
 	}
 
 	void Renderer::CreateFramebuffers() {
 
-		m_Swapchain->CreateSwapchainFramebuffers(m_RenderPass);
+		m_Framebuffers.resize(m_RenderContext->GetImageCount());
+
+		VkExtent2D extent = m_RenderContext->GetSwapchainExtent2D();
+
+		const auto& views = m_RenderContext->GetImageViews();
+		
+		for (U64 i = 0; i < m_Framebuffers.size(); i++) {
+
+			VK::FramebufferCreateInfo info = {};
+			info.Attachments = { views[i].ImageView, m_RenderContext->GetDepthView().ImageView };
+			info.Layers = 1;
+			info.RenderPass = m_RenderPass;
+			info.Height = extent.height;
+			info.Width = extent.width;
+
+			m_Framebuffers[i] = VK::CreateFramebuffer(m_RenderContext->GetDevice(), info);
+		}
 	}
 
 	void Renderer::DestroyFramebuffers() {
 
-		if (m_Swapchain) {
+		for (U64 i = 0; i < m_Framebuffers.size(); i++) {
 
-			m_Swapchain->DestroySwapchainFramebuffers();
+			VK::DestroyFramebuffer(m_RenderContext->GetDevice(), m_Framebuffers[i]);
 		}
+
+		m_Framebuffers.clear();
 	}
 
 	void Renderer::CreatePipelineLayout() {
 
-		m_Layout = new VKPipelineLayout();
-		m_Layout->Create(m_Device);
+		VK::PipelineLayoutCreateInfo info = {};
+		m_Layout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
 	}
 
 	void Renderer::DestroyPipelineLayout() {
 
-		if (m_Layout) {
-
-			m_Layout->Destroy();
-
-			delete m_Layout;
-			m_Layout = nullptr;
-		}
+		VK::DestroyPipelineLayout(m_RenderContext->GetDevice(), m_Layout);
 	}
 
 	void Renderer::CreateGraphicsPipeline() {
 
-		m_GraphicsPipeline = new VKGraphicsPipeline();
-
 		LoadShaderResources();
-		m_GraphicsPipeline->Create(m_Device, m_Swapchain, m_Layout, m_RenderPass, VKShader::GetVulkanShaderStageInfo());
+
+		VkVertexInputBindingDescription bindingDescription = {};
+		bindingDescription.binding = 0;
+		bindingDescription.stride = sizeof(Vertex);
+		bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+		VkVertexInputAttributeDescription attributeDescription[2] = { {}, {} };
+
+		attributeDescription[0].binding = 0;
+		attributeDescription[0].location = 0;
+		attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescription[0].offset = offsetof(Vertex, x);
+
+		attributeDescription[1].binding = 0;
+		attributeDescription[1].location = 1;
+		attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
+		attributeDescription[1].offset = offsetof(Vertex, ny);
+
+		VkPipelineVertexInputStateCreateInfo vertexInfo = {};
+		vertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+		vertexInfo.vertexBindingDescriptionCount = 1;
+		vertexInfo.vertexAttributeDescriptionCount = 2;
+		vertexInfo.pVertexAttributeDescriptions = attributeDescription;
+		vertexInfo.pVertexBindingDescriptions = &bindingDescription;
+
+		VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
+		inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+		inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+		inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+		VkPipelineViewportStateCreateInfo viewportState = {};
+		viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+		viewportState.viewportCount = 1;
+		viewportState.scissorCount = 1;
+
+		VkPipelineRasterizationStateCreateInfo rasterizer = {};
+		rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+		rasterizer.depthClampEnable = VK_FALSE;
+		rasterizer.rasterizerDiscardEnable = VK_FALSE;
+		rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+		rasterizer.lineWidth = 1.0f;
+		rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;;
+		rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+		rasterizer.depthBiasEnable = VK_FALSE;
+
+		VkPipelineMultisampleStateCreateInfo multisampling = {};
+		multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+		multisampling.sampleShadingEnable = VK_FALSE;
+		multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+		VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+		colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+		colorBlendAttachment.blendEnable = VK_FALSE;
+
+		VkPipelineColorBlendStateCreateInfo colorBlending = {};
+		colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+		colorBlending.logicOpEnable = VK_FALSE;
+		colorBlending.logicOp = VK_LOGIC_OP_COPY;
+		colorBlending.attachmentCount = 1;
+		colorBlending.pAttachments = &colorBlendAttachment;
+		colorBlending.blendConstants[0] = 0.0f;
+		colorBlending.blendConstants[1] = 0.0f;
+		colorBlending.blendConstants[2] = 0.0f;
+		colorBlending.blendConstants[3] = 0.0f;
+
+		const auto& stages = VKShader::GetVulkanShaderStageInfo();
+
+		std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+		VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+		dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+		dynamicStateInfo.pDynamicStates = dynamicStates.data();
+		dynamicStateInfo.dynamicStateCount = (U32)dynamicStates.size();
+
+		VkPipelineDepthStencilStateCreateInfo depthStencil = {};
+		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+		depthStencil.depthTestEnable = VK_TRUE;
+		depthStencil.depthWriteEnable = VK_TRUE;
+		depthStencil.depthCompareOp = VK_COMPARE_OP_GREATER;
+		depthStencil.depthBoundsTestEnable = VK_FALSE;
+		depthStencil.stencilTestEnable = VK_FALSE;
+
+		VK::GraphicsPipelineCreateInfo info = {};
+		info.Stages = stages;
+		info.VertexInputState = vertexInfo;
+		info.InputAssemblyState = inputAssembly;
+		info.ViewportState = viewportState;
+		info.RasterizationState = rasterizer;
+		info.MultisampleState = multisampling;
+		info.DepthStencilState = depthStencil;
+		info.ColorBlendState = colorBlending;
+		info.DynamicState = dynamicStateInfo;
+		info.Layout = m_Layout;
+		info.RenderPass = m_RenderPass;
+	
+		m_GraphicsPipeline = VK::CreateGraphicsPipeline(m_RenderContext->GetDevice(), info);
 		DestroyShaderRescources();
 	}
 
 	void Renderer::DestroyGraphicsPipeline() {
 
-		if (m_GraphicsPipeline) {
-
-			m_GraphicsPipeline->Destroy();
-			
-			delete m_GraphicsPipeline;
-			m_GraphicsPipeline = nullptr;
-		}
+		VK::DestroyGraphicsPipeline(m_RenderContext->GetDevice(), m_GraphicsPipeline);
 	}
 
 	void Renderer::CreateCommands() {
@@ -333,9 +387,19 @@ namespace BRQ {
 
 		for (U64 i = 0; i < FRAME_LAG; i++) {
 
-			m_CommandPools[i].Create(m_Device);
+			VK::CommandPoolCreateInfo info = {};
+			info.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+			info.QueueFamilyIndex = m_RenderContext->GetGraphicsAndPresentationQueueIndex();
 
-			m_CommandBuffers.push_back(std::move(m_CommandPools[i].AllocateCommandBuffers(1)[0]));
+			m_CommandPools[i] = VK::CreateCommandPool(m_RenderContext->GetDevice(), info);
+
+			VK::CommandBufferAllocateInfo allocateInfo = {};
+			allocateInfo.CommandPool = m_CommandPools[i];
+			allocateInfo.Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+			allocateInfo.CommandBufferCount = 1;
+
+			auto buffer = VK::AllocateCommandBuffers(m_RenderContext->GetDevice(), allocateInfo);
+			m_CommandBuffers.push_back(buffer[0]);
 		}
 	}
 
@@ -343,8 +407,8 @@ namespace BRQ {
 
 		for (U64 i = 0; i < FRAME_LAG; i++) {
 
-			m_CommandPools[i].FreeCommandBuffer(m_CommandBuffers[i]);
-			m_CommandPools[i].Destroy();
+			VK::FreeCommandBuffer(m_RenderContext->GetDevice(), m_CommandPools[i], m_CommandBuffers[i]);
+			VK::DestroyCommandPool(m_RenderContext->GetDevice(), m_CommandPools[i]);
 		}
 
 		m_CommandBuffers.clear();
@@ -359,9 +423,9 @@ namespace BRQ {
 
 		for (U64 i = 0; i < FRAME_LAG; i++) {
 
-			m_ImageAvailableSemaphores[i].Create(m_Device);
-			m_RenderFinishedSemaphores[i].Create(m_Device);
-			m_CommandBufferExecutedFences[i].Create(m_Device);
+			m_ImageAvailableSemaphores[i] = VK::CreateVKSemaphore(m_RenderContext->GetDevice());
+			m_RenderFinishedSemaphores[i] = VK::CreateVKSemaphore(m_RenderContext->GetDevice());
+			m_CommandBufferExecutedFences[i] = VK::CreateFence(m_RenderContext->GetDevice());
 		}
 	}
 
@@ -369,9 +433,9 @@ namespace BRQ {
 
 		for (U64 i = 0; i < FRAME_LAG; i++) {
 
-			m_ImageAvailableSemaphores[i].Destroy();
-			m_RenderFinishedSemaphores[i].Destroy();
-			m_CommandBufferExecutedFences[i].Destroy();
+			VK::DestroyVKSemaphore(m_RenderContext->GetDevice(), m_ImageAvailableSemaphores[i]);
+			VK::DestroyVKSemaphore(m_RenderContext->GetDevice(), m_RenderFinishedSemaphores[i]);
+			VK::DestroyFence(m_RenderContext->GetDevice(), m_CommandBufferExecutedFences[i]);
 		}
 
 		m_ImageAvailableSemaphores.clear();

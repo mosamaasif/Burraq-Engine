@@ -11,7 +11,7 @@ namespace BRQ {
 
     Logger::Logger(const LoggerProperties& properties)
         : m_LoggerName(properties.LoggerName), m_LogLevel(LogLevel::Warn),
-          m_FileLogging(properties.FileLogging), m_Buffer(nullptr)  {
+        m_FileLogging(properties.FileLogging), m_Buffer(nullptr), m_FileSink({}) {
 
         m_Buffer = new U8[MAX_LOGGER_BUFFER];
 

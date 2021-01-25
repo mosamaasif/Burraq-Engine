@@ -23,7 +23,7 @@ namespace BRQ {
 
     private:
         VkShaderModule                                      m_ShaderModule;
-        const VKDevice*                                     m_Device;
+        VkDevice                                            m_Device;
 
         static std::vector<VkPipelineShaderStageCreateInfo> s_ShaderStages;
 
@@ -31,7 +31,7 @@ namespace BRQ {
         VKShader();
         ~VKShader() = default;
 
-        void Create(const VKDevice* device, const std::string_view filename, ShaderType type);
+        void Create(const VkDevice& device, const std::string_view filename, ShaderType type);
         void Destroy();
 
         const VkShaderModule& GetVulkanShaderModule() const { return m_ShaderModule; }

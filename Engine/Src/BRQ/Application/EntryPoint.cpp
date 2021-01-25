@@ -8,9 +8,6 @@
 #include "Graphics/Renderer.h"
 #include "Graphics/Mesh.h"
 
-#include "Platform/Vulkan/VKVertexBuffer.h"
-#include "Platform/Vulkan/VKIndexBuffer.h"
-
 int main() {
 
     using namespace BRQ;

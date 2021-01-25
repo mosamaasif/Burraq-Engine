@@ -9,12 +9,14 @@
 #endif
 
 #include <set>
+#include <vector>
 #include <cstdio>
 #include <cstring>
 #include <fstream>
 #include <sstream>
 #include <iostream>
 #include <memory.h>
+#include <algorithm>
 #include <functional>
 #include <string_view>
 

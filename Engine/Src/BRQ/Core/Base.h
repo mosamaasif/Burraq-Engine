@@ -12,7 +12,9 @@
     #define BRQ_CORE_ASSERT(x)                  { if(!(x)) { BRQ_CORE_ASSERT_DEFAULT(x); __debugbreak(); } }
 #else
     #define BRQ_ASSERT(x)
-    #define BRQ_CORE_ASSERT(x, ...)
+    #define BRQ_CORE_ASSERT(x)
 #endif
 
 #define BIT(x)  (1 << x)
+
+#define BRQ_ALIGN(x) __declspec(align(x))

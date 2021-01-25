@@ -2,29 +2,36 @@
 
 #include <BRQ.h>
 
+#include "Platform/Vulkan/VKInitializers.h"
+
 namespace BRQ {
 
     struct Vertex {
 
-        F32 positions[3];
-        F32 normals[3];
+        F32 x, y, z;
+        F32 nx, ny, nz;
     };
 
     class Mesh {
 
     private:
-        std::vector<Vertex> m_Vertices;
-        std::vector<U32> m_Indices;
+        VK::Buffer  m_VertexBuffer;
+        VK::Buffer  m_IndexBuffer;
+        U64         m_VertexCount;
+        U64         m_IndexCount;
 
     public:
-        Mesh() = default;
-        Mesh(const std::vector<Vertex>& m_Vertices, const std::vector<U32>& m_Indices);
+        Mesh();
         Mesh(const std::string_view& filename);
         ~Mesh() = default;
 
         void LoadMesh(std::string_view filename);
 
-        const std::vector<Vertex>& GetVertices() const { return m_Vertices; }
-        const std::vector<U32>& GetIndices() const { return m_Indices; }
+        void DestroyMesh();
+
+        const VkBuffer& GetVertexBuffer() const { return m_VertexBuffer.BufferAllocation.Buffer; }
+        const VkBuffer& GetIndexBuffer() const { return m_IndexBuffer.BufferAllocation.Buffer; }
+        U64 GetVertexCount() const { return m_VertexCount; }
+        U64 GetIndexCount() const { return m_IndexCount; }
     };
 }

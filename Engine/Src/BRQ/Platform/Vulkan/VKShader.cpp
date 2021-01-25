@@ -1,7 +1,6 @@
 #include <BRQ.h>
 
 #include "VKShader.h"
-#include "VKDevice.h"
 
 namespace BRQ {
 
@@ -10,7 +9,7 @@ namespace BRQ {
     VKShader::VKShader()
         : m_ShaderModule(VK_NULL_HANDLE), m_Device(nullptr) { }
 
-    void VKShader::Create(const VKDevice* device, const std::string_view filename, ShaderType type) {
+    void VKShader::Create(const VkDevice& device, const std::string_view filename, ShaderType type) {
 
         m_Device = device;
 
@@ -35,7 +34,7 @@ namespace BRQ {
             info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
             info.codeSize = code.size();
             info.pCode = (U32*)code.data();
-            VK_CHECK(vkCreateShaderModule(device->GetLogicalDevice(), &info, nullptr, &m_ShaderModule));
+            VK_CHECK(vkCreateShaderModule(device, &info, nullptr, &m_ShaderModule));
         }
 
         {
@@ -65,7 +64,7 @@ namespace BRQ {
 
         if (m_ShaderModule) {
 
-            vkDestroyShaderModule(m_Device->GetLogicalDevice(), m_ShaderModule, nullptr);
+            vkDestroyShaderModule(m_Device, m_ShaderModule, nullptr);
             m_ShaderModule = VK_NULL_HANDLE;
         }
     }

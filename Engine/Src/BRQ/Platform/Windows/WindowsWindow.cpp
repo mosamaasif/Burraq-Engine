@@ -32,7 +32,6 @@ namespace BRQ {
             }
             TranslateMessage(&message);
             DispatchMessage(&message);
-
         }
     }
 

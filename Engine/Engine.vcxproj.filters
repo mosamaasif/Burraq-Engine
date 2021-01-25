@@ -10,26 +10,14 @@
     <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="Src\BRQ\BRQ.cpp" />
     <ClCompile Include="Src\BRQ\Application\Input.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKDevice.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInstance.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSurface.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\FileSystem.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKShader.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKRenderPass.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKPipelineLayout.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKGraphicsPipeline.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKFramebuffer.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKCommandPool.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKCommandBuffer.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSemaphore.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKFence.cpp" />
     <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKSwapchain.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Mesh.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\VulkanMemoryAllocator.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKVertexBuffer.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKIndexBuffer.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\RenderContext.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInitializers.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -50,20 +38,8 @@
     <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
     <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommon.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKDevice.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInstance.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSurface.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VKShader.h" />
     <ClInclude Include="Src\BRQ\Utilities\FileSystem.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKGraphicsPipeline.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKRenderPass.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKPipelineLayout.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKFramebuffer.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommandBuffer.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommandPool.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSemaphore.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKFence.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKSwapchain.h" />
     <ClInclude Include="Src\BRQ\Graphics\Renderer.h" />
     <ClInclude Include="Src\BRQ\Events\WindowEvents.h" />
     <ClInclude Include="ThirdParty\TinyObjLoader\include\tiny_obj_loader.h" />
@@ -71,8 +47,9 @@
     <ClInclude Include="ThirdParty\meshoptimizer\include\meshoptimizer.h" />
     <ClInclude Include="ThirdParty\VulkanMemoryAllocator\include\vk_mem_alloc.h" />
     <ClInclude Include="Src\BRQ\Utilities\VulkanMemoryAllocator.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKVertexBuffer.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKIndexBuffer.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\RenderContext.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInitializers.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommands.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />
