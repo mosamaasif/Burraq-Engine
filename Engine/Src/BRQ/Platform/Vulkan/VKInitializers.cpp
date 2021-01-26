@@ -490,8 +490,6 @@ namespace BRQ { namespace VK {
         std::vector<Image> swapchainImages;
         std::vector<ImageView> swapchainImageViews;
 
-        SwapchainStatus status;
-
         U32 imageCount = info.MinImageCount;
 
         VK_CHECK(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain));
@@ -522,15 +520,12 @@ namespace BRQ { namespace VK {
             viewInfo.SubresourceRange.layerCount = 1;
 
             swapchainImageViews[i] = VK::CreateImageView(device, viewInfo);
-        }
-
-        status = SwapchainStatus::Ready;
+        };
 
         SwapchainResult result;
         result.Swapchain = swapchain;
         result.SwapchainImages = std::move(swapchainImages);
         result.SwapchainImageViews = std::move(swapchainImageViews);
-        result.SwapchainStatus = status;
 
         return result;
     }
@@ -862,6 +857,11 @@ namespace BRQ { namespace VK {
         submitInfo.pSignalSemaphores = info.SignalSemaphores;
 
         VK_CHECK(vkQueueSubmit(info.Queue, 1, &submitInfo, info.CommandBufferExecutedFence));
+    }
+
+    void QueueWaitIdle(const VkQueue& queue) {
+
+        VK_CHECK(vkQueueWaitIdle(queue));
     }
 
     VkCommandPool CreateCommandPool(const VkDevice& device, const CommandPoolCreateInfo& info) {

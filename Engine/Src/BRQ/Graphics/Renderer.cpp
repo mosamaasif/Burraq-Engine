@@ -47,12 +47,21 @@ namespace BRQ {
 
 		VkCommandBuffer buffer = m_CommandBuffers[index];
 
-		U32 imageIndex = m_RenderContext->AcquireImageIndex(m_ImageAvailableSemaphores[index]);
+		VkResult result = m_RenderContext->AcquireImageIndex(m_ImageAvailableSemaphores[index]);
 
-		if (m_RenderContext->GetSwapchainStatus() == VK::SwapchainStatus::NotReady) {
+		if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
 
 			RecreateSwapchain();
+			result = m_RenderContext->AcquireImageIndex(m_ImageAvailableSemaphores[index]);
 		}
+
+		if (result != VK_SUCCESS) {
+
+			VK::QueueWaitIdle(m_RenderContext->GetGraphicsAndPresentationQueue());
+			return;
+		}
+
+		U32 imageIndex = m_RenderContext->GetAcquiredImageIndex();
 
 		VK::CommandBufferBeginInfo beginInfo = {};
 		beginInfo.CommandBuffer = buffer;
@@ -112,11 +121,15 @@ namespace BRQ {
 
 		VK::QueueSubmit(submitInfo);
 
-		m_RenderContext->Present(m_RenderFinishedSemaphores[index]);
+		result = m_RenderContext->Present(m_RenderFinishedSemaphores[index]);
 
-		if (m_RenderContext->GetSwapchainStatus() == VK::SwapchainStatus::NotReady) {
+		if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
 
 			RecreateSwapchain();
+		}
+		else if (result != VK_SUCCESS) {
+
+			BRQ_CORE_ERROR("Failed to present swapchain image.");
 		}
 	}
 
@@ -135,7 +148,7 @@ namespace BRQ {
 		CreateCommands();
 		CreateSyncronizationPrimitives();
 
-		mesh.LoadMesh("Src/Models/monkey_flat.obj");
+		mesh.LoadMesh("Models/monkey_flat.obj");
 	}
 
 	void Renderer::DestroyInternal() {
@@ -158,10 +171,13 @@ namespace BRQ {
 
 		VK_CHECK(vkDeviceWaitIdle(m_RenderContext->GetDevice()));
 
+		DestroySyncronizationPrimitives();
+		DestroyCommands();
 		DestroyFramebuffers();
 		m_RenderContext->UpdateSwapchain();
-		m_RenderContext->UpdateDepthResources();
 		CreateFramebuffers();
+		CreateCommands();
+		CreateSyncronizationPrimitives();
 	}
 
 	void Renderer::LoadShaderResources() {

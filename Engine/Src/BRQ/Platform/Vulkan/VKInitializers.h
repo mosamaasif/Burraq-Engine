@@ -21,12 +21,6 @@ namespace BRQ { namespace VK {
         Tranfer,
     };
 
-    enum class SwapchainStatus {
-
-        Ready = 0,
-        NotReady,
-    };
-
 #ifdef BRQ_DEBUG
 
     namespace VKDEBUG {
@@ -120,7 +114,6 @@ namespace BRQ { namespace VK {
         VkSwapchainKHR              Swapchain = VK_NULL_HANDLE;
         std::vector<Image>          SwapchainImages = {};
         std::vector<ImageView>      SwapchainImageViews = {};
-        SwapchainStatus             SwapchainStatus = SwapchainStatus::NotReady;
     };
 
     BRQ_ALIGN(16) struct ImageCreateInfo {
@@ -383,6 +376,7 @@ namespace BRQ { namespace VK {
     void ResetFences(const VkDevice& device, const std::vector<VkFence>& fence);
 
     void QueueSubmit(const QueueSubmitInfo& info = {});
+    void QueueWaitIdle(const VkQueue& queue);
 
     VkCommandPool CreateCommandPool(const VkDevice& device, const CommandPoolCreateInfo& info = {});
     void DestroyCommandPool(const VkDevice& device, VkCommandPool& pool);

@@ -6,7 +6,10 @@
 namespace BRQ {
 
     Window::Window() 
-        : m_Open(false) { }
+        : m_Open(false) {
+    
+        m_EventCallback = [](Event&) {};
+    }
 
     Window* Window::Create(const WindowProperties& properties) {
 

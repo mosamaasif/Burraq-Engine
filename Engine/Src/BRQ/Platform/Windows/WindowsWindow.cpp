@@ -191,7 +191,13 @@ namespace BRQ {
         case WM_SIZE:
 
             m_Properties.Width = LOWORD(lParam);
-            m_Properties.Height = HIWORD(lParam);
+            m_Properties.Width = HIWORD(lParam);
+
+            {
+                WindowResizeEvent event(m_Properties.Width, m_Properties.Width);
+                m_EventCallback(event);
+            }
+
             break;
 
         default:

@@ -1,14 +1,15 @@
 #pragma once
 
 #include <BRQ.h>
+#include "Events/Event.h"
 
 namespace BRQ {
 
     struct WindowProperties {
 
-        std::string Title;
-        U32         Width;
-        U32         Height;
+        std::string             Title;
+        U32                     Width;
+        U32                     Height;
 
         WindowProperties(std::string title = "Burraq Engine", U32 width = 800U, U32 height = 600U)
             : Title(title), Width(width), Height(height) { }
@@ -18,9 +19,11 @@ namespace BRQ {
 
     public:
         typedef void* WindowHandle;
+        using EventCallbackFunction = std::function<void(Event&)>;
 
     protected:
-        bool m_Open;
+        bool                    m_Open;
+        EventCallbackFunction   m_EventCallback;
 
     protected:
         Window();
@@ -35,6 +38,7 @@ namespace BRQ {
 
         virtual WindowHandle GetNativeWindowHandle() const = 0;
 
+        void SetEventCallbackFunction(const EventCallbackFunction& function) { m_EventCallback = function; }
         bool IsOpen() const { return m_Open; }
 
         static Window* Create(const WindowProperties& properties = WindowProperties());

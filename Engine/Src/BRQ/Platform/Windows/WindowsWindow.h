@@ -7,9 +7,6 @@ namespace BRQ {
 
     class WindowsWindow : public Window {
 
-    public:
-        using EventCallbackFn = std::function<void(Event&)>;
-
     private:
         WindowProperties    m_Properties;
         WindowHandle        m_WindowHandle;

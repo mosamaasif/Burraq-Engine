@@ -205,27 +205,25 @@ namespace BRQ {
         VK::DestroySwapchain(m_Device, m_SwapchainResult.Swapchain);
     }
 
-    U32 RenderContext::AcquireImageIndex(const VkSemaphore& imageAvailableSemaphore) {
+    VkResult RenderContext::AcquireImageIndex(const VkSemaphore& imageAvailableSemaphore) {
 
         U32 index = -1;
 
         VkResult result = vkAcquireNextImageKHR(m_Device, m_SwapchainResult.Swapchain, UINT64_MAX, imageAvailableSemaphore, VK_NULL_HANDLE, &index);
-
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-
-            m_SwapchainResult.SwapchainStatus = VK::SwapchainStatus::NotReady;
-        }
-        else {
-
-            VK_CHECK(result);
-        }
         
-        return m_AcquiredImageIndex = index;
+        m_AcquiredImageIndex = index;
+
+        return result;
     }
 
     void RenderContext::UpdateSwapchain() {
 
         auto capabilities = VK::GetSurfaceCapabilities(m_PhysicalDevice, m_Surface);
+
+        if (capabilities.currentExtent.height == 0 && capabilities.currentExtent.width == 0) {
+
+            return;
+        }
 
         if (m_SwapchainExtent2D.height == capabilities.currentExtent.height && m_SwapchainExtent2D.width == capabilities.currentExtent.width) {
 
@@ -261,10 +259,11 @@ namespace BRQ {
         m_SwapchainResult.Swapchain = result.Swapchain;
         m_SwapchainResult.SwapchainImages = std::move(result.SwapchainImages);
         m_SwapchainResult.SwapchainImageViews = std::move(result.SwapchainImageViews);
-        m_SwapchainResult.SwapchainStatus = result.SwapchainStatus;
+
+        UpdateDepthResources();
     }
 
-    void RenderContext::Present(const VkSemaphore& signalSemaphore) {
+    VkResult RenderContext::Present(const VkSemaphore& signalSemaphore) {
 
         VK::PresentInfo info = {};
 
@@ -275,16 +274,9 @@ namespace BRQ {
 
         VkResult result = VK::Present(info);
 
-        if (result == VK_ERROR_OUT_OF_DATE_KHR || result == VK_SUBOPTIMAL_KHR) {
-
-            m_SwapchainResult.SwapchainStatus = VK::SwapchainStatus::NotReady;
-        }
-        else {
-
-            VK_CHECK(result);
-        }
-
         m_CurrentIndex = (m_CurrentIndex + 1) % FRAME_LAG;
+
+        return result;
     }
 
     void RenderContext::UpdateDepthResources() {
@@ -293,7 +285,6 @@ namespace BRQ {
         CreateDepthResources();
     }
 
-#if 1
     void RenderContext::CreateDepthResources() {
         
         VK::ImageCreateInfo info = {};
@@ -331,5 +322,4 @@ namespace BRQ {
         VK::DestroyImageView(m_Device, m_DepthImageView);
         VK::DestroyImage(m_DepthImage);
     }
-#endif
 }

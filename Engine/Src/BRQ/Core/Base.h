@@ -18,3 +18,5 @@
 #define BIT(x)  (1 << x)
 
 #define BRQ_ALIGN(x) __declspec(align(x))
+
+#define BRQ_BIND_EVENT_FN(function) [this](auto&&... args) -> decltype(auto) { return this->function(std::forward<decltype(args)>(args)...); }

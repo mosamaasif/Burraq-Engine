@@ -62,7 +62,6 @@ namespace BRQ {
         U32 GetComputeQueueIndex() const { return m_ComputeQueueIndex; }
         U32 GetTransferQueueIndex() const { return m_TransferQueueIndex; }
 
-        VK::SwapchainStatus GetSwapchainStatus() const { return m_SwapchainResult.SwapchainStatus; }
         const VkExtent2D& GetSwapchainExtent2D() const { return m_SwapchainExtent2D; }
 
         const VkSurfaceFormatKHR& GetSurfaceFormat() const { return m_SurfaceFormat; }
@@ -71,15 +70,14 @@ namespace BRQ {
         const std::vector<VK::ImageView>& GetImageViews() const { return m_SwapchainResult.SwapchainImageViews; }
         VK::ImageView GetDepthView() const { return m_DepthImageView; }
 
-        U32 AcquireImageIndex(const VkSemaphore& imageAvailableSemaphore);
+        VkResult AcquireImageIndex(const VkSemaphore& imageAvailableSemaphore);
+        U32 GetAcquiredImageIndex() const { return m_AcquiredImageIndex; }
         U32 GetCurrentIndex() const { return m_CurrentIndex; }
         U32 GetImageCount() const { return m_ImageCount; }
 
         void UpdateSwapchain();
 
-        void Present(const VkSemaphore& signalSemaphore);
-
-        void UpdateDepthResources();
+        VkResult Present(const VkSemaphore& signalSemaphore);
 
     private:
         void InitInternal(const Window* window, const std::vector<std::pair<VK::QueueType, F32>>& requestedQueues);
@@ -103,6 +101,7 @@ namespace BRQ {
 
         void CreateDepthResources();
         void DestroyDepthResources();
+        void UpdateDepthResources();
     };
 
 }
