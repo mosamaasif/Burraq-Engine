@@ -171,13 +171,9 @@ namespace BRQ {
 
 		VK_CHECK(vkDeviceWaitIdle(m_RenderContext->GetDevice()));
 
-		DestroySyncronizationPrimitives();
-		DestroyCommands();
 		DestroyFramebuffers();
 		m_RenderContext->UpdateSwapchain();
 		CreateFramebuffers();
-		CreateCommands();
-		CreateSyncronizationPrimitives();
 	}
 
 	void Renderer::LoadShaderResources() {

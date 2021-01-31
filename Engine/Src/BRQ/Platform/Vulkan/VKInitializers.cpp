@@ -1004,6 +1004,9 @@ namespace BRQ { namespace VK {
             VK_CHECK(vkQueueSubmit(info.TransferQueue, 1, &submitInfo, VK_NULL_HANDLE));
             VK_CHECK(vkQueueWaitIdle(info.TransferQueue));
 
+            FreeCommandBuffer(device, pool, cmd[0]);
+            DestroyCommandPool(device, pool);
+
             vma->DestroyBuffer(stagingBuffer);
         }
         else {

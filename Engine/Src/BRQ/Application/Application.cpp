@@ -71,9 +71,11 @@ namespace BRQ {
 
             m_Minimized = true;
         }
+        else {
 
-        m_Minimized = false;
-        
+            m_Minimized = false;
+        }
+
         return false;
     }
 
