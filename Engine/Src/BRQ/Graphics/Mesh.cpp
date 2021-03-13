@@ -89,9 +89,6 @@ namespace BRQ {
         vertexCreateInfo.Usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         vertexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vertexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
-        vertexCreateInfo.Data = vertexBuffer.data();
-        vertexCreateInfo.TransferQueueFamilyIndex = queueIndex;
-        vertexCreateInfo.TransferQueue = queue;
 
         m_VertexBuffer = VK::CreateBuffer(device, vertexCreateInfo);
 
@@ -101,11 +98,49 @@ namespace BRQ {
         indexCreateInfo.Usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         indexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         indexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
-        indexCreateInfo.Data = indexBuffer.data();
-        indexCreateInfo.TransferQueueFamilyIndex = queueIndex;
-        indexCreateInfo.TransferQueue = queue;
 
         m_IndexBuffer = VK::CreateBuffer(device, indexCreateInfo);
+
+        VK::CommandPoolCreateInfo poolInfo = {};
+        poolInfo.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
+        poolInfo.QueueFamilyIndex = queueIndex;
+
+        VkCommandPool pool = VK::CreateCommandPool(device, poolInfo);
+
+        VK::CommandBufferAllocateInfo allocateInfo = {};
+        allocateInfo.CommandPool = pool;
+        allocateInfo.Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
+        allocateInfo.CommandBufferCount = 2;
+
+        auto cmds = VK::AllocateCommandBuffers(device, allocateInfo);
+
+        VK::UploadBufferInfo vertexUpload = {};
+        vertexUpload.DestinationBuffer = &m_VertexBuffer;
+        vertexUpload.Data = vertexBuffer.data();
+        vertexUpload.Size = m_VertexCount * sizeof(Vertex);
+        vertexUpload.Queue = queue;
+        vertexUpload.QueueFamilyIndex = queueIndex;
+        vertexUpload.CommandBuffer = cmds[0];
+        vertexUpload.MemoryUsage = vertexCreateInfo.MemoryUsage;
+        vertexUpload.WaitForUpload = true;
+
+        VK::UploadBufferInfo indexUpload = {};
+        indexUpload.DestinationBuffer = &m_IndexBuffer;
+        indexUpload.Data = indexBuffer.data();
+        indexUpload.Size = m_IndexCount * sizeof(U32);
+        indexUpload.Queue = queue;
+        indexUpload.QueueFamilyIndex = queueIndex;
+        indexUpload.CommandBuffer = cmds[1];
+        indexUpload.MemoryUsage = indexCreateInfo.MemoryUsage;
+        indexUpload.WaitForUpload = true;
+
+        VK::UploadBuffer(device, vertexUpload);
+        VK::UploadBuffer(device, indexUpload);
+
+        VK::FreeCommandBuffer(device, pool, cmds[0]);
+        VK::FreeCommandBuffer(device, pool, cmds[1]);
+
+        VK::DestroyCommandPool(device, pool);
     }
 
     void Mesh::DestroyMesh() {

@@ -53,6 +53,7 @@
     <ClInclude Include="Src\BRQ\Application\Application.h" />
     <ClInclude Include="Src\Engine.h" />
     <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
+    <ClInclude Include="Src\BRQ\Math\Math.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />

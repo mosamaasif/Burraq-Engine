@@ -8,36 +8,36 @@
 
 namespace BRQ {
 
-	class Application {
+    class Application {
 
-	private:
-		Application*		s_Application;
+    private:
+        Application*		s_Application;
 
-		WindowProperties	m_WindowProperties;
-		Window*				m_Window;
+        WindowProperties	m_WindowProperties;
+        Window*				m_Window;
 
-		bool				m_Running;
-		bool				m_Minimized;
+        bool				m_Running;
+        bool				m_Minimized;
 
-	protected:
-		Renderer*			m_Renderer;
+    protected:
+        Renderer*			m_Renderer;
 
-	protected:
-		Application();
-		Application(const WindowProperties& props = WindowProperties());
+    protected:
+        Application();
+        Application(const WindowProperties& props = WindowProperties());
 
-	public:
-		virtual ~Application();
+    public:
+        virtual ~Application();
 
-		void Run();
-		void OnEvent(Event& event);
+        void Run();
+        void OnEvent(Event& event);
 
-		Application* GetApplication() { return s_Application; }
+        Application* GetApplication() { return s_Application; }
 
-	private:
-		bool OnWindowResize(WindowResizeEvent& event);
-		bool OnWindowClose(WindowCloseEvent& event);
-	};
+    private:
+        bool OnWindowResize(WindowResizeEvent& event);
+        bool OnWindowClose(WindowCloseEvent& event);
+    };
 
-	Application* CreateApplication(const WindowProperties& props = WindowProperties());
+    Application* CreateApplication(const WindowProperties& props = WindowProperties());
 }

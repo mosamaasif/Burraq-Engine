@@ -122,7 +122,7 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\ThirdParty\VulkanMemoryAllocator\include\;$(VULKAN_SDK)\Include\;$(SolutionDir)Engine\Src\BRQ\;$(SolutionDir)Engine\Src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\ThirdParty\GLM\include\;$(SolutionDir)Engine\ThirdParty\VulkanMemoryAllocator\include\;$(VULKAN_SDK)\Include\;$(SolutionDir)Engine\Src\BRQ\;$(SolutionDir)Engine\Src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
     </ClCompile>
     <Link>
@@ -142,8 +142,13 @@
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <AdditionalIncludeDirectories>$(SolutionDir)Engine\ThirdParty\VulkanMemoryAllocator\include\;$(VULKAN_SDK)\Include\;$(SolutionDir)Engine\Src\BRQ\;$(SolutionDir)Engine\Src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(SolutionDir)Engine\ThirdParty\GLM\include\;$(SolutionDir)Engine\ThirdParty\VulkanMemoryAllocator\include\;$(VULKAN_SDK)\Include\;$(SolutionDir)Engine\Src\BRQ\;$(SolutionDir)Engine\Src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>true</OmitFramePointers>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>

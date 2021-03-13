@@ -951,6 +951,28 @@ namespace BRQ { namespace VK {
 
         if (needStagingBuffer) {
 
+            createInfo.usage = info.Usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+        }
+
+        result.BufferAllocation = vma->CreateBuffer(createInfo, allocationInfo);
+        return result;
+    }
+
+    void DestoryBuffer(const VkDevice& device, Buffer& buffer) {
+
+        auto vma = VulkanMemoryAllocator::GetInstance();
+
+        vma->DestroyBuffer(buffer.BufferAllocation);
+    }
+
+    void UploadBuffer(const VkDevice& device, const UploadBufferInfo& info) {
+
+        bool needStagingBuffer = info.MemoryUsage == VMA_MEMORY_USAGE_GPU_ONLY;
+
+        auto vma = VulkanMemoryAllocator::GetInstance();
+
+        if (needStagingBuffer) {
+
             VkBufferCreateInfo stagingCreateInfo = {};
             stagingCreateInfo.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
             stagingCreateInfo.size = info.Size;
@@ -961,30 +983,13 @@ namespace BRQ { namespace VK {
             stagingAllocationCreateInfo.usage = VMA_MEMORY_USAGE_CPU_ONLY;
             stagingAllocationCreateInfo.flags = VMA_ALLOCATION_CREATE_MAPPED_BIT;
 
-            createInfo.usage = info.Usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-
             auto stagingBuffer = vma->CreateBuffer(stagingCreateInfo, stagingAllocationCreateInfo);
             auto stagingInfo = vma->GetAllocationInfo(stagingBuffer);
 
             memcpy_s(stagingInfo.pMappedData, stagingInfo.size, info.Data, info.Size);
 
-            result.BufferAllocation = vma->CreateBuffer(createInfo, allocationInfo);
-
-            CommandPoolCreateInfo poolInfo = {};
-            poolInfo.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            poolInfo.QueueFamilyIndex = info.TransferQueueFamilyIndex;
-
-            VkCommandPool pool = CreateCommandPool(device, poolInfo);
-
-            CommandBufferAllocateInfo commandBufferInfo = {};
-            commandBufferInfo.CommandPool = pool;
-            commandBufferInfo.Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
-            commandBufferInfo.CommandBufferCount = 1;
-
-            auto cmd = AllocateCommandBuffers(device, commandBufferInfo);
-
             CommandBufferBeginInfo beginInfo = {};
-            beginInfo.CommandBuffer = cmd[0];
+            beginInfo.CommandBuffer = info.CommandBuffer;
             beginInfo.Flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
 
             CommandBufferBegin(beginInfo);
@@ -993,41 +998,32 @@ namespace BRQ { namespace VK {
             copyRegion.srcOffset = 0;
             copyRegion.dstOffset = 0;
             copyRegion.size = info.Size;
-            vkCmdCopyBuffer(cmd[0], stagingBuffer.Buffer, result.BufferAllocation.Buffer, 1, &copyRegion);
+            vkCmdCopyBuffer(info.CommandBuffer, stagingBuffer.Buffer, info.DestinationBuffer->BufferAllocation.Buffer, 1, &copyRegion);
 
-            CommandBufferEnd(cmd[0]);
+            CommandBufferEnd(info.CommandBuffer);
 
             VkSubmitInfo submitInfo = { VK_STRUCTURE_TYPE_SUBMIT_INFO };
             submitInfo.commandBufferCount = 1;
-            submitInfo.pCommandBuffers = &cmd[0];
+            submitInfo.pCommandBuffers = &info.CommandBuffer;
 
-            VK_CHECK(vkQueueSubmit(info.TransferQueue, 1, &submitInfo, VK_NULL_HANDLE));
-            VK_CHECK(vkQueueWaitIdle(info.TransferQueue));
+            VK_CHECK(vkQueueSubmit(info.Queue, 1, &submitInfo, VK_NULL_HANDLE));
 
-            FreeCommandBuffer(device, pool, cmd[0]);
-            DestroyCommandPool(device, pool);
+            if (info.WaitForUpload) {
+
+                VK_CHECK(vkQueueWaitIdle(info.Queue));
+            }
 
             vma->DestroyBuffer(stagingBuffer);
         }
         else {
 
-            result.BufferAllocation = vma->CreateBuffer(createInfo, allocationInfo);
-
-            void* data = vma->MapMemory(result.BufferAllocation);
+            void* data = vma->MapMemory(info.DestinationBuffer->BufferAllocation);
 
             memcpy_s(data, info.Size, info.Data, info.Size);
 
-            vma->UnMapMemory(result.BufferAllocation);
+            vma->UnMapMemory(info.DestinationBuffer->BufferAllocation);
         }
-
-        return result;
     }
 
-    void DestoryBuffer(const VkDevice& device, Buffer& buffer) {
-
-        auto vma = VulkanMemoryAllocator::GetInstance();
-
-        vma->DestroyBuffer(buffer.BufferAllocation);
-    }
 
 } }

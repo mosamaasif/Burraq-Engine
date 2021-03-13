@@ -62,7 +62,7 @@
       <PreprocessorDefinitions>BRQ_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
@@ -87,7 +87,7 @@
       <PreprocessorDefinitions>BRQ_RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -98,6 +98,8 @@
       <OmitFramePointers>false</OmitFramePointers>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <DisableSpecificWarnings>26812;26495;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -133,6 +135,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
+    <ClInclude Include="Src\BRQ\Math\Math.h" />
     <ClInclude Include="Src\Engine.h" />
     <ClInclude Include="Src\BRQ\Application\Application.h" />
     <ClInclude Include="Src\BRQ\Application\Input.h" />

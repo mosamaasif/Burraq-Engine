@@ -299,9 +299,18 @@ namespace BRQ { namespace VK {
         std::vector<U32>            QueueFamilyIndices = {};
         VmaAllocationCreateFlags    MemoryFlags = {};
         VmaMemoryUsage              MemoryUsage = {};
-        const void*                 Data = nullptr;
-        U32                         TransferQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        VkQueue                     TransferQueue = VK_NULL_HANDLE;
+    };
+
+    BRQ_ALIGN(16) struct UploadBufferInfo {
+
+        const Buffer*   DestinationBuffer = nullptr;
+        const void*     Data = nullptr;
+        VkDeviceSize    Size = 0;
+        VkQueue         Queue = VK_NULL_HANDLE;
+        U32             QueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
+        VmaMemoryUsage  MemoryUsage = {};
+        bool            WaitForUpload = true;
     };
 
     VkInstance CreateInstance(const InstanceCreateInfo& info = {});
@@ -392,5 +401,7 @@ namespace BRQ { namespace VK {
 
     Buffer CreateBuffer(const VkDevice& device, const BufferCreateInfo& info = {});
     void DestoryBuffer(const VkDevice& device, Buffer& buffer);
+
+    void UploadBuffer(const VkDevice& device, const UploadBufferInfo& info = {});
 
 } }
