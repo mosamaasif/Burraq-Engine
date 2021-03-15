@@ -84,9 +84,9 @@ namespace BRQ {
 
         VkViewport viewport = {};
         viewport.x = 0.0f;
-        viewport.y = 0.0f;
+        viewport.y = (F32)extent.height;
         viewport.width = (F32)extent.width;
-        viewport.height = (F32)extent.height;
+        viewport.height = -(F32)extent.height;
         viewport.minDepth = 0.0f;
         viewport.maxDepth = 1.0f;
 
@@ -149,6 +149,7 @@ namespace BRQ {
         CreateSyncronizationPrimitives();
 
         mesh.LoadMesh("Models/monkey_flat.obj");
+        //mesh.LoadMesh("Models/Lion.obj");
     }
 
     void Renderer::DestroyInternal() {

@@ -47,7 +47,7 @@ namespace BRQ {
 
                 Vertex v;
                 v.x =  obj->positions[gi.p * 3 + 0];
-                v.y = -obj->positions[gi.p * 3 + 1];
+                v.y =  obj->positions[gi.p * 3 + 1];
                 v.z =  obj->positions[gi.p * 3 + 2];
                 v.nx = obj->normals[gi.n * 3 + 0];
                 v.ny = obj->normals[gi.n * 3 + 1];
