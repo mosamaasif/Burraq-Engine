@@ -1,9 +1,8 @@
 #pragma once
 
 #include "Events/Event.h"
-
+#include "Camera/Camera.h"
 #include "Platform/Vulkan/VKShader.h"
-
 #include "Platform/Vulkan/RenderContext.h"
 
 namespace BRQ {
@@ -45,11 +44,8 @@ namespace BRQ {
 
         static void SubmitResources(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) { s_ShaderResources = resources; }
 
-        //void Begin();
-        //void End();
-
-        //void BegineScene();
-        //void EndScene();
+        void BeginScene(const Camera& camera);
+        void EndScene();
 
         //void Submit();
 

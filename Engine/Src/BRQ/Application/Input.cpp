@@ -1,18 +1,23 @@
 #include "BRQ.h"
 #include "Input.h"
 #include "Events/MouseEvent.h"
+#include <GLFW/glfw3.h>
 
 namespace BRQ {
 
-    Input* Input::s_Instance = nullptr;
-    bool Input::s_Key[MAX_KEYS];
-    bool Input::s_Mouse[MAX_BUTTONS];
-    F32 Input::s_MouseX = 0.0f;
-    F32 Input::s_MouseY = 0.0f;
+    Input*      Input::s_Instance = nullptr;
+    GLFWwindow* Input::s_Window = nullptr;
+    bool        Input::s_Key[MAX_KEYS];
+    bool        Input::s_Mouse[MAX_BUTTONS];
+    F32         Input::s_MouseX = 0.0f;
+    F32         Input::s_MouseY = 0.0f;
 
-    void Input::Init() {
+    void Input::Init(GLFWwindow* window) {
 
         s_Instance = new Input();
+
+        s_Window = window;
+
         memset(s_Key, 0, MAX_KEYS);
         memset(s_Mouse, 0, MAX_BUTTONS);
     }
@@ -46,6 +51,11 @@ namespace BRQ {
     std::pair<F32, F32> BRQ::Input::GetMousePosition() {
 
         return std::pair<F32, F32>(s_MouseX, s_MouseY);
+    }
+
+    void Input::SetMousePosition(F32 x, F32 y) {
+
+        glfwSetCursorPos(s_Window, x, y);
     }
 
     void Input::ClearState() {

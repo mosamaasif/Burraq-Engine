@@ -18,6 +18,9 @@
     <ClCompile Include="Src\BRQ\Platform\Vulkan\RenderContext.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInitializers.cpp" />
     <ClCompile Include="Src\BRQ\Application\Application.cpp" />
+    <ClCompile Include="Src\BRQ\Camera\Camera.cpp" />
+    <ClCompile Include="Src\BRQ\Camera\CameraController.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -54,6 +57,9 @@
     <ClInclude Include="Src\Engine.h" />
     <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
     <ClInclude Include="Src\BRQ\Math\Math.h" />
+    <ClInclude Include="Src\BRQ\Camera\Camera.h" />
+    <ClInclude Include="Src\BRQ\Camera\CameraController.h" />
+    <ClInclude Include="Src\BRQ\Utilities\Timer.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />

@@ -216,7 +216,7 @@ namespace BRQ { namespace VK {
         VkFramebuffer          Framebuffer = VK_NULL_HANDLE;
         VkRect2D               RenderArea = {};
         VkClearValue           ColorValues = { 86.0f / 255.0f, 50.0f / 255.0f, 168.0f / 255.0f, 1.0f };
-        VkClearValue           DepthValues = {};
+        VkClearValue           DepthValues = { 1.0 };
         VkCommandBuffer        CommandBuffer = VK_NULL_HANDLE;
     };
 

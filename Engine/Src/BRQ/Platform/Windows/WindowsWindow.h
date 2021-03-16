@@ -3,6 +3,8 @@
 #include "Application/Window.h"
 #include "Events/Event.h"
 
+struct GLFWwindow;
+
 namespace BRQ {
 
     class WindowsWindow : public Window {
@@ -10,6 +12,7 @@ namespace BRQ {
     private:
         WindowProperties    m_Properties;
         WindowHandle        m_WindowHandle;
+        GLFWwindow*         m_Window;
 
     public:
         WindowsWindow() = delete;
@@ -25,9 +28,5 @@ namespace BRQ {
 
     private:
         bool Init();
-        
-        static LRESULT EventCallbackSetup(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        static LRESULT EventCallbackFunction(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);
-        LRESULT EventCallbackHandler(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam);  
     };
 }

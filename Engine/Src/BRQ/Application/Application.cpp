@@ -2,8 +2,6 @@
 
 #include "Application.h"
 
-
-
 namespace BRQ {
 
     Application::Application() {
@@ -12,7 +10,7 @@ namespace BRQ {
     }
 
     Application::Application(const WindowProperties& props)
-        : m_Window(nullptr), m_Renderer(nullptr), m_Running(false), m_Minimized(true) {
+        : m_Window(nullptr), m_Renderer(nullptr), m_Minimized(true) {
         
         BRQ_ASSERT("Default Application Constructor");
 
@@ -28,7 +26,9 @@ namespace BRQ {
         Renderer::Init(m_Window);
         m_Renderer = Renderer::GetInstance();
 
-        m_Running = true;
+        m_InputManager = Input::GetInstance();
+
+        m_CameraController = CameraController(m_Window->GetWidth(), m_Window->GetHeight(), 60.0f);
         m_Minimized = false;
     }
 
@@ -47,25 +47,65 @@ namespace BRQ {
     void Application::OnEvent(Event& event) {
 
         EventDispatcher dispatcher(event);
-        dispatcher.Dispatch<WindowCloseEvent>(BRQ_BIND_EVENT_FN(Application::OnWindowClose));
         dispatcher.Dispatch<WindowResizeEvent>(BRQ_BIND_EVENT_FN(Application::OnWindowResize));
     }
 
     void Application::Run() {
 
-        // temp
+        Timer clock;
+
+        F32 start = 0.0f;
+        F32 end = 0.0f;
+
         while (m_Window->IsOpen()) {
+
+            start = end;
+            end = clock.GetTime();
+
+            F32 dt = end - start;
 
             if (!m_Minimized) {
 
-                m_Renderer->Present();
+                OnUpdate(dt);
             }
 
             m_Window->OnUpdate();
         }
     }
+
+    void Application::OnUpdate(F32 dt) {
+
+        m_CameraController.OnUpdate(dt);
+
+        if (m_InputManager->IsKeyPressed(Key::KEY_T)) {
+
+            m_CameraController.CaptureCamera(true);
+        }
+        else if (m_InputManager->IsKeyPressed(Key::KEY_Y)) {
+
+            m_CameraController.CaptureCamera(false);
+        }
+
+        if (m_InputManager->IsKeyPressed(Key::KEY_R)) {
+
+            m_CameraController.Reset();
+        }
+
+        if (!m_Minimized) {
+
+            m_Renderer->BeginScene(m_CameraController.GetCamera());
+
+            // draw here
+
+            m_Renderer->EndScene();
+
+            m_Renderer->Present();
+        }
+    }
     
     bool Application::OnWindowResize(WindowResizeEvent& event) {
+
+        m_CameraController.OnEvent(event);
 
         if (event.GetHeight() == 0 || event.GetWidth() == 0) {
 
@@ -78,11 +118,4 @@ namespace BRQ {
 
         return false;
     }
-
-    bool Application::OnWindowClose(WindowCloseEvent& event) {
-
-        m_Running = false;
-        return false;
-    }
-
 }

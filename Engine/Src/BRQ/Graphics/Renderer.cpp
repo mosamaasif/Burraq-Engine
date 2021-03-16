@@ -10,6 +10,8 @@
 #include "Platform/Vulkan/RenderContext.h"
 #include "Platform/Vulkan/VKCommands.h"
 
+#include "Math/Math.h"
+
 namespace BRQ {
 
     // this shouldnt be here
@@ -36,7 +38,7 @@ namespace BRQ {
         delete s_Renderer;
     }
 
-    void Renderer::Present() {
+    void Renderer::BeginScene(const Camera& camera) {
 
         U32 index = m_RenderContext->GetCurrentIndex();
 
@@ -78,10 +80,8 @@ namespace BRQ {
 
         VK::CommandBeginRenderPass(info);
 
-        vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
-
+        // TEMP
         VkExtent2D extent = m_RenderContext->GetSwapchainExtent2D();
-
         VkViewport viewport = {};
         viewport.x = 0.0f;
         viewport.y = (F32)extent.height;
@@ -97,11 +97,23 @@ namespace BRQ {
         vkCmdSetViewport(buffer, 0, 1, &viewport);
         vkCmdSetScissor(buffer, 0, 1, &scissor);
 
+        vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
         VkDeviceSize offset = 0;
         vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.GetVertexBuffer(), &offset);
         vkCmdBindIndexBuffer(buffer, mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
+
+        glm::mat4 pv = camera.GetProjectionMatrix() * camera.GetViewMatrix();
+
+        vkCmdPushConstants(buffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pv[0]);
+
         vkCmdDrawIndexed(buffer, (U32)mesh.GetIndexCount(), 1, 0, 0, 0);
+    }
+
+    void Renderer::EndScene() {
+
+        U32 index = m_RenderContext->GetCurrentIndex();
+        VkCommandBuffer buffer = m_CommandBuffers[index];
 
         VK::CommandEndRenderPass(buffer);
 
@@ -120,8 +132,12 @@ namespace BRQ {
         submitInfo.CommandBufferExecutedFence = m_CommandBufferExecutedFences[index];
 
         VK::QueueSubmit(submitInfo);
+    }
 
-        result = m_RenderContext->Present(m_RenderFinishedSemaphores[index]);
+    void Renderer::Present() {
+
+        U32 index = m_RenderContext->GetCurrentIndex();
+        VkResult result = m_RenderContext->Present(m_RenderFinishedSemaphores[index]);
 
         if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
 
@@ -148,8 +164,8 @@ namespace BRQ {
         CreateCommands();
         CreateSyncronizationPrimitives();
 
-        mesh.LoadMesh("Models/monkey_flat.obj");
-        //mesh.LoadMesh("Models/Lion.obj");
+        //mesh.LoadMesh("Models/monkey_flat.obj");
+        mesh.LoadMesh("Models/Lion.obj");
     }
 
     void Renderer::DestroyInternal() {
@@ -277,7 +293,14 @@ namespace BRQ {
 
     void Renderer::CreatePipelineLayout() {
 
+        VkPushConstantRange push;
+        push.offset = 0;
+        push.size = sizeof(glm::mat4);
+        push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
+
         VK::PipelineLayoutCreateInfo info = {};
+        info.PushConstantRanges.push_back(push);
+
         m_Layout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
     }
 
@@ -367,7 +390,7 @@ namespace BRQ {
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
         depthStencil.depthTestEnable = VK_TRUE;
         depthStencil.depthWriteEnable = VK_TRUE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_GREATER;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.stencilTestEnable = VK_FALSE;
 

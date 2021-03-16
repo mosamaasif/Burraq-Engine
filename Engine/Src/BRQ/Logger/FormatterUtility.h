@@ -145,4 +145,20 @@ namespace BRQ {
 
         memcpy_s(buffer, size, value, len);
     }
+
+    template <>
+    static void WriteToBuffer(U8* buffer, U64 size, bool value) {
+
+        const char* t = "True";
+        const char* f = "False";
+
+        if (value) {
+
+            WriteToBuffer(buffer, size, t);
+        }
+        else {
+
+            WriteToBuffer(buffer, size, f);
+        }
+    }
 }

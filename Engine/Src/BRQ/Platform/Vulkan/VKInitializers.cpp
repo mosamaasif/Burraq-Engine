@@ -2,7 +2,6 @@
 
 #include "VKInitializers.h"
 
-
 namespace BRQ { namespace VK {
 
     VkInstance CreateInstance(const InstanceCreateInfo& info) {
