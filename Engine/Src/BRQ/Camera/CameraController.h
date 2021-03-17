@@ -10,6 +10,10 @@ namespace BRQ {
 	private:
 		F32		m_Fov;
 		F32		m_AspectRatio;
+
+		F32		m_Width;
+		F32		m_Height;
+
 		Camera	m_Camera;
 		bool	m_CaptureCamera;
 

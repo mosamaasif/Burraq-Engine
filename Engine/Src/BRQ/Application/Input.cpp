@@ -58,6 +58,11 @@ namespace BRQ {
         glfwSetCursorPos(s_Window, x, y);
     }
 
+    void Input::SetInputMode(InputMode mode) {
+
+        glfwSetInputMode(s_Window, GLFW_CURSOR, (I32)mode);
+    }
+
     void Input::ClearState() {
 
         memset(s_Key, 0, MAX_KEYS);

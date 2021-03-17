@@ -8,7 +8,12 @@ namespace BRQ {
 	
 		m_AspectRatio = (F32)width / (F32)height;
 		m_Fov = fov;
-		m_CaptureCamera = capture;
+
+		CaptureCamera(capture);
+
+
+		m_Width = (F32)width;
+		m_Height = (F32)height;
 
 		glm::mat4 projection = glm::perspective(glm::radians(m_Fov), m_AspectRatio, 0.1f, 1000.0f);
 		m_Camera = Camera(projection, width, height);
@@ -20,16 +25,14 @@ namespace BRQ {
 
 		glm::vec2 pos = { input->GetMouseX(), input->GetMouseY() };
 
-		float deltaX = pos.x - m_Camera.m_LastMousePosition.x;
-		float deltaY = m_Camera.m_LastMousePosition.y - pos.y;
+		F32 deltaX = pos.x - (I32)m_Camera.m_WindowCenterX;
+		F32 deltaY = (I32)m_Camera.m_WindowCenterY - pos.y;
 
-		if (m_CaptureCamera) {
+		F64 yaw = deltaX * m_Camera.m_MouseSensitivity;
+		F64 pitch = deltaY * m_Camera.m_MouseSensitivity;
 
-			input->SetMousePosition(m_Camera.m_LastMousePosition.x, m_Camera.m_LastMousePosition.y);
-		}
-
-		m_Camera.m_Yaw += deltaX * m_Camera.m_MouseSensitivity * 0.3;
-		m_Camera.m_Pitch += deltaY * m_Camera.m_MouseSensitivity * 0.3;
+		m_Camera.m_Yaw += (F32)(yaw);
+		m_Camera.m_Pitch += (F32)(pitch);
 
 		// Avoids Gimbal lock
 		if (m_Camera.m_Pitch > 89.0f)
@@ -37,7 +40,7 @@ namespace BRQ {
 		if (m_Camera.m_Pitch < -89.0f)
 			m_Camera.m_Pitch = -89.0f;
 
-		float velocity = m_Camera.m_Speed * dt * 0.1;
+		F32 velocity = m_Camera.m_Speed * dt;
 
 		if (input->IsKeyPressed(Key::KEY_W))
 			m_Camera.m_Position += m_Camera.m_Front * velocity;
@@ -52,7 +55,11 @@ namespace BRQ {
 		if (input->IsKeyPressed(Key::KEY_LCONTROL))
 			m_Camera.m_Position -= m_Camera.m_Up * velocity;
 
-		m_Camera.Update();
+		if (m_CaptureCamera) {
+
+			input->SetMousePosition(m_Camera.m_WindowCenterX, m_Camera.m_WindowCenterY);
+			m_Camera.Update();
+		}
 	}
 
 	void CameraController::OnEvent(Event& event) {
@@ -61,32 +68,56 @@ namespace BRQ {
 
 		dispatcher.Dispatch<WindowResizeEvent>([this](WindowResizeEvent& event) {
 
-			return OnWindowResized(event);
-			});
+				return OnWindowResized(event);
+			}
+		);
 	}
 
 	void CameraController::CaptureCamera(bool capture) {
+
+		auto input = Input::GetInstance();
+
+		input->SetInputMode(Input::InputMode::CursorHidden);
+
+		if (capture) {
+
+			input->SetInputMode(Input::InputMode::CursorHidden);
+		}
+		else {
+
+			input->SetInputMode(Input::InputMode::CursorNormal);
+		}
 
 		m_CaptureCamera = capture;
 	}
 
 	void CameraController::Reset() {
 
-		m_Camera.m_Front = { 0.00414f, 0.99985f, 0.01695f };
+		glm::mat4 projection = glm::perspective(glm::radians(m_Fov), m_AspectRatio, 0.1f, 1000.0f);
+		m_Camera = Camera(projection, (U32)m_Width, (U32)m_Height);
 		m_Camera.Update();
 	}
 
 	bool CameraController::OnWindowResized(WindowResizeEvent& event) {
 
-		F32 width = (F32)event.GetWidth();
-		F32 height = (F32)event.GetHeight();
+		U32 width = event.GetWidth();
+		U32 height = event.GetHeight();
 
-		m_Camera.m_LastMousePosition = { width / 2.0f, height / 2.0f };
+		if (width == 0 || height == 0) {
 
-		m_AspectRatio = width / height;
+			return false;
+		}
+
+		m_Width = (F32)width;
+		m_Height = (F32)height;
+
+		m_AspectRatio = m_Width / m_Height;
 
 		glm::mat4 projection = glm::perspective(glm::radians(m_Fov), m_AspectRatio, 0.1f, 1000.0f);
-		m_Camera = Camera(projection, width, height);
+		m_Camera = Camera(projection, (U32)m_Width, (U32)m_Height);
+
+		m_Camera.m_WindowCenterX = m_Width / 2.0f;
+		m_Camera.m_WindowCenterY = m_Height / 2.0f;
 		m_Camera.Update();
 
 		return false;

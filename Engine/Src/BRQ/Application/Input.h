@@ -15,6 +15,13 @@ namespace BRQ {
     
     class Input {
 
+    public:
+        enum class InputMode {
+ 
+            CursorHidden = 0x00034002,
+            CursorNormal = 0x00034001
+        };
+
     private:
         static Input*         s_Instance;
 
@@ -45,6 +52,8 @@ namespace BRQ {
         F32 GetMouseY();
         std::pair<F32, F32> GetMousePosition();
         void SetMousePosition(F32 x, F32 y);
+
+        void SetInputMode(InputMode mode);
 
         void ClearState();
 

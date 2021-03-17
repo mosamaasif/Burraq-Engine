@@ -19,10 +19,8 @@ namespace BRQ {
 		glm::vec3	m_Up;
 		glm::vec3	m_WorldUp;
 
-		glm::vec2	m_LastMousePosition;
-
-		U32			m_WindowWidth;
-		U32			m_WindowHeight;
+		F32			m_WindowCenterX;
+		F32			m_WindowCenterY;
 
 		F32			m_Yaw;
 		F32			m_Pitch;

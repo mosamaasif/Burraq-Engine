@@ -12,12 +12,13 @@ namespace BRQ {
 		m_Front = { 0.00414f, 0.99985f, 0.01695f };
 		m_WorldUp = { 0.0f, 1.0f, 0.0f };
 
-		m_LastMousePosition = { (F32)width / 2.0f, (F32)height / 2.0f };
+		m_WindowCenterX = (F32)width / 2.0f;
+		m_WindowCenterY = (F32)height / 2.0f;
 
 		m_Yaw = -90.f;
 		m_Pitch = 0.0f;
-		m_Speed = 0.005f;
-		m_MouseSensitivity = 0.1f;
+		m_Speed = 0.001f;
+		m_MouseSensitivity = 0.03f;
 	}
 
 	void Camera::Update() {
