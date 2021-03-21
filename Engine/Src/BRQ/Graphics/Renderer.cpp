@@ -16,9 +16,7 @@ namespace BRQ {
 
     // this shouldnt be here
     Mesh mesh;
-
     Renderer* Renderer::s_Renderer = nullptr;
-    std::vector<std::pair<std::string, VKShader::ShaderType>> Renderer::s_ShaderResources;
 
     Renderer::Renderer()
         : m_RenderContext(nullptr), m_RenderPass(nullptr),
@@ -36,6 +34,13 @@ namespace BRQ {
         s_Renderer->DestroyInternal();
 
         delete s_Renderer;
+    }
+
+    void Renderer::SubmitResources(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
+
+        m_ShaderResources = resources;
+
+        CreateGraphicsPipeline();
     }
 
     void Renderer::BeginScene(const Camera& camera) {
@@ -102,10 +107,11 @@ namespace BRQ {
         vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.GetVertexBuffer(), &offset);
         vkCmdBindIndexBuffer(buffer, mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
-
         glm::mat4 pv = camera.GetProjectionMatrix() * camera.GetViewMatrix();
 
         vkCmdPushConstants(buffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pv[0]);
+
+        vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet[index], 0, nullptr);
 
         vkCmdDrawIndexed(buffer, (U32)mesh.GetIndexCount(), 1, 0, 0, 0);
     }
@@ -127,7 +133,6 @@ namespace BRQ {
         submitInfo.CommandBuffers = &buffer;
         submitInfo.SignalSemaphoreCount = 1;
         submitInfo.SignalSemaphores = &m_RenderFinishedSemaphores[index];
-        submitInfo.QueueFamilyIndex = m_RenderContext->GetGraphicsAndPresentationQueueIndex();
         submitInfo.Queue = m_RenderContext->GetGraphicsAndPresentationQueue();
         submitInfo.CommandBufferExecutedFence = m_CommandBufferExecutedFences[index];
 
@@ -159,13 +164,19 @@ namespace BRQ {
 
         CreateRenderPass();
         CreateFramebuffers();
+        CreateDescriptorSetLayout();
+        CreateTexture();
+        CreateTextureSampler2D();
+        CreateDescriptorPool();
+        CreateDescriptorSets();
         CreatePipelineLayout();
-        CreateGraphicsPipeline();
+
         CreateCommands();
         CreateSyncronizationPrimitives();
 
         //mesh.LoadMesh("Models/monkey_flat.obj");
-        mesh.LoadMesh("Models/Lion.obj");
+        //mesh.LoadMesh("Models/Lion.obj");
+        mesh.LoadMesh("Models/crate.obj");
     }
 
     void Renderer::DestroyInternal() {
@@ -178,6 +189,8 @@ namespace BRQ {
         DestroyCommands();
         DestroyGraphicsPipeline();
         DestroyPipelineLayout();
+        DestroyDescriptorPool();
+        DestoryDescriptorSetLayout();
         DestroyFramebuffers();
         DestroyRenderPass();
         
@@ -195,11 +208,11 @@ namespace BRQ {
 
     void Renderer::LoadShaderResources() {
 
-        m_Shaders.resize(s_ShaderResources.size());
+        m_Shaders.resize(m_ShaderResources.size());
 
-        for (U64 i = 0; i < s_ShaderResources.size(); i++) {
+        for (U64 i = 0; i < m_ShaderResources.size(); i++) {
 
-            const auto& resource = s_ShaderResources[i];
+            const auto& resource = m_ShaderResources[i];
 
             m_Shaders[i].Create(m_RenderContext->GetDevice(), resource.first, resource.second);
         }
@@ -299,6 +312,7 @@ namespace BRQ {
         push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
 
         VK::PipelineLayoutCreateInfo info = {};
+        info.SetLayouts.push_back(m_DescriptorSetLayout);
         info.PushConstantRanges.push_back(push);
 
         m_Layout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
@@ -318,7 +332,7 @@ namespace BRQ {
         bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        VkVertexInputAttributeDescription attributeDescription[2] = { {}, {} };
+        VkVertexInputAttributeDescription attributeDescription[3] = { {}, {} };
 
         attributeDescription[0].binding = 0;
         attributeDescription[0].location = 0;
@@ -328,12 +342,17 @@ namespace BRQ {
         attributeDescription[1].binding = 0;
         attributeDescription[1].location = 1;
         attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription[1].offset = offsetof(Vertex, ny);
+        attributeDescription[1].offset = offsetof(Vertex, nx);
+
+        attributeDescription[2].binding = 0;
+        attributeDescription[2].location = 2;
+        attributeDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescription[2].offset = offsetof(Vertex, u);
 
         VkPipelineVertexInputStateCreateInfo vertexInfo = {};
         vertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInfo.vertexBindingDescriptionCount = 1;
-        vertexInfo.vertexAttributeDescriptionCount = 2;
+        vertexInfo.vertexAttributeDescriptionCount = 3;
         vertexInfo.pVertexAttributeDescriptions = attributeDescription;
         vertexInfo.pVertexBindingDescriptions = &bindingDescription;
 
@@ -477,5 +496,101 @@ namespace BRQ {
         m_ImageAvailableSemaphores.clear();
         m_RenderFinishedSemaphores.clear();
         m_CommandBufferExecutedFences.clear();
+    }
+
+    void Renderer::CreateDescriptorSetLayout() {
+
+        VkDescriptorSetLayoutBinding binding = {};
+        binding.binding = 0;
+        binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        binding.descriptorCount = 1;
+        binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+        VK::DescriptorSetLayoutCreateInfo info = {};
+        info.BindingCount = 1;
+        info.Bindings = &binding;
+
+        m_DescriptorSetLayout = VK::CreateDescriptorSetLayout(m_RenderContext->GetDevice(), info);
+    }
+
+    void Renderer::DestoryDescriptorSetLayout() {
+
+        VK::DestoryDescriptorSetLayout(m_RenderContext->GetDevice(), m_DescriptorSetLayout);
+    }
+
+    void Renderer::CreateDescriptorPool() {
+
+        VkDescriptorPoolSize size = {};
+        size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+        size.descriptorCount = m_RenderContext->GetImageCount();
+
+        VK::DescriptorPoolCreateInfo info = {};
+        info.MaxSets = size.descriptorCount;
+        info.PoolSizeCount = 1;
+        info.PoolSizes = &size;
+
+        m_DescriptorPool.push_back(VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info));
+    }
+
+    void Renderer::DestroyDescriptorPool() {
+
+        for (auto& pool : m_DescriptorPool) {
+
+            VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), pool);
+        }
+
+        m_DescriptorPool.clear();
+    }
+
+    void Renderer::CreateDescriptorSets() {
+
+        std::vector<VkDescriptorSetLayout> layouts(m_RenderContext->GetImageCount(), m_DescriptorSetLayout);
+
+        VK::DescriptorSetAllocateInfo info = {};
+        info.DescriptorPool = m_DescriptorPool[0];
+        info.DescriptorSetCount = m_RenderContext->GetImageCount();
+        info.SetLayouts = layouts.data();
+
+        m_DescriptorSet = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
+
+        for (size_t i = 0; i < m_DescriptorSet.size(); i++) {
+
+            VkDescriptorImageInfo imageInfo = {};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = m_Texture2D->GetImageView().ImageView;
+            imageInfo.sampler = m_TextureSampler2D->GetTextureSampler2D();
+
+            VkWriteDescriptorSet descriptorWrites = {};
+
+            descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.dstSet = m_DescriptorSet[i];
+            descriptorWrites.dstBinding = 0;
+            descriptorWrites.dstArrayElement = 0;
+            descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.descriptorCount = 1;
+            descriptorWrites.pImageInfo = &imageInfo;
+
+            vkUpdateDescriptorSets(m_RenderContext->GetDevice(), 1, &descriptorWrites, 0, nullptr);
+        }
+    }
+
+    void Renderer::CreateTextureSampler2D() {
+
+        m_TextureSampler2D = new TextureSampler2D();
+    }
+
+    void Renderer::DestroyTextureSampler2D() {
+
+        delete m_TextureSampler2D;
+    }
+
+    void Renderer::CreateTexture() {
+
+        m_Texture2D = new Texture2D("Models/crate.jpg");
+    }
+
+    void Renderer::DestroyTexture() {
+
+        delete m_Texture2D;
     }
 }

@@ -10,6 +10,7 @@ namespace BRQ {
 
         F32 x, y, z;
         F32 nx, ny, nz;
+        F32 u, v;
     };
 
     class Mesh {

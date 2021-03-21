@@ -265,7 +265,6 @@ namespace BRQ { namespace VK {
         const VkCommandBuffer*      CommandBuffers = VK_NULL_HANDLE;
         U32                         SignalSemaphoreCount = 0;
         const VkSemaphore*          SignalSemaphores = VK_NULL_HANDLE;
-        U32                         QueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         VkQueue                     Queue = VK_NULL_HANDLE;
         VkFence                     CommandBufferExecutedFence = VK_NULL_HANDLE;
     };
@@ -311,6 +310,66 @@ namespace BRQ { namespace VK {
         VkCommandBuffer CommandBuffer = VK_NULL_HANDLE;
         VmaMemoryUsage  MemoryUsage = {};
         bool            WaitForUpload = true;
+    };
+
+    BRQ_ALIGN(16) struct DescriptorSetLayoutCreateInfo {
+
+        VkDescriptorSetLayoutCreateFlags        Flags = {};
+        U32                                     BindingCount = {};
+        const VkDescriptorSetLayoutBinding*     Bindings = {};
+    };
+
+    BRQ_ALIGN(16) struct DescriptorPoolCreateInfo {
+
+        VkDescriptorPoolCreateFlags     Flags = {};
+        U32                             MaxSets = {};
+        U32                             PoolSizeCount = {};
+        const VkDescriptorPoolSize*     PoolSizes = {};
+    };
+
+    BRQ_ALIGN(16) struct DescriptorSetAllocateInfo {
+
+        VkDescriptorPool                DescriptorPool = {};
+        uint32_t                        DescriptorSetCount = {};
+        const VkDescriptorSetLayout*    SetLayouts = {};
+    };
+
+    BRQ_ALIGN(16) struct ImageLayoutTransitionInfo {
+
+        VkImage         Image = {};
+        VkFormat        Format = {};
+        VkImageLayout   OldLayout = {};
+        VkImageLayout   NewLayout = {};
+        VkCommandBuffer CommandBuffer = {};
+    };
+
+    BRQ_ALIGN(16) struct CopyBufferToImageInfo {
+
+        VkBuffer        Buffer = {};
+        VkImage         Image = {};
+        U32             Width = {};
+        U32             Height = {};
+        VkCommandBuffer CommandBuffer = {};
+    };
+
+    BRQ_ALIGN(16) struct SamplerCreateInfo {
+
+        VkSamplerCreateFlags    Flags = {};
+        VkFilter                MagFilter = {};
+        VkFilter                MinFilter = {};
+        VkSamplerMipmapMode     MipmapMode = {};
+        VkSamplerAddressMode    AddressModeU = {};
+        VkSamplerAddressMode    AddressModeV = {};
+        VkSamplerAddressMode    AddressModeW = {};
+        F32                     MipLodBias = {};
+        VkBool32                AnisotropyEnable = {};
+        F32                     MaxAnisotropy = {};
+        VkBool32                CompareEnable = {};
+        VkCompareOp             CompareOp = {};
+        F32                     MinLod = {};
+        F32                     MaxLod = {};
+        VkBorderColor           BorderColor = {};
+        VkBool32                UnnormalizedCoordinates = {};
     };
 
     VkInstance CreateInstance(const InstanceCreateInfo& info = {});
@@ -399,9 +458,25 @@ namespace BRQ { namespace VK {
     void CommandBufferBegin(const CommandBufferBeginInfo& info = {});
     void CommandBufferEnd(const VkCommandBuffer& buffer);
 
-    Buffer CreateBuffer(const VkDevice& device, const BufferCreateInfo& info = {});
-    void DestoryBuffer(const VkDevice& device, Buffer& buffer);
+    Buffer CreateBuffer(const BufferCreateInfo& info = {});
+    void DestoryBuffer(Buffer& buffer);
 
     void UploadBuffer(const VkDevice& device, const UploadBufferInfo& info = {});
+
+    VkDescriptorSetLayout CreateDescriptorSetLayout(const VkDevice& device, const DescriptorSetLayoutCreateInfo& info = {});
+    void DestoryDescriptorSetLayout(const VkDevice& device, VkDescriptorSetLayout& layout);
+
+    VkDescriptorPool CreateDescriptorPool(const VkDevice& device, const DescriptorPoolCreateInfo& info = {});
+    void DestoryDescriptorPool(const VkDevice& device, VkDescriptorPool& pool);
+
+    // TODO change this for dynamic descriptor sets
+    std::vector<VkDescriptorSet> AllocateDescriptorSets(const VkDevice& device, const DescriptorSetAllocateInfo& info = {});
+
+    void ImageLayoutTransition(const ImageLayoutTransitionInfo info = {});
+
+    void CopyBufferToImage(const CopyBufferToImageInfo& info = {});
+
+    VkSampler CreateSampler(const VkDevice& device, const SamplerCreateInfo& info = {});
+    void DestroySampler(const VkDevice& device, VkSampler& sampler);
 
 } }

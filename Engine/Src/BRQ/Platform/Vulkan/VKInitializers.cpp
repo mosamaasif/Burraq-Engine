@@ -927,7 +927,7 @@ namespace BRQ { namespace VK {
         VK_CHECK(vkEndCommandBuffer(buffer));
     }
 
-    Buffer CreateBuffer(const VkDevice& device, const BufferCreateInfo& info) {
+    Buffer CreateBuffer(const BufferCreateInfo& info) {
 
         Buffer result = {};
 
@@ -957,7 +957,7 @@ namespace BRQ { namespace VK {
         return result;
     }
 
-    void DestoryBuffer(const VkDevice& device, Buffer& buffer) {
+    void DestoryBuffer(Buffer& buffer) {
 
         auto vma = VulkanMemoryAllocator::GetInstance();
 
@@ -1024,5 +1024,156 @@ namespace BRQ { namespace VK {
         }
     }
 
+    VkDescriptorSetLayout CreateDescriptorSetLayout(const VkDevice& device, const DescriptorSetLayoutCreateInfo& info) {
+
+        VkDescriptorSetLayout layout = VK_NULL_HANDLE;
+
+        VkDescriptorSetLayoutCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+        createInfo.flags = info.Flags;
+        createInfo.bindingCount = info.BindingCount;
+        createInfo.pBindings = info.Bindings;
+
+        VK_CHECK(vkCreateDescriptorSetLayout(device, &createInfo, nullptr, &layout));
+
+        return layout;
+    }
+
+    void DestoryDescriptorSetLayout(const VkDevice& device, VkDescriptorSetLayout& layout) {
+
+        vkDestroyDescriptorSetLayout(device, layout, nullptr);
+        layout = VK_NULL_HANDLE;
+    }
+
+    VkDescriptorPool CreateDescriptorPool(const VkDevice& device, const DescriptorPoolCreateInfo& info) {
+
+        VkDescriptorPool pool = VK_NULL_HANDLE;
+
+        VkDescriptorPoolCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
+        createInfo.flags = info.Flags;
+        createInfo.maxSets = info.MaxSets;
+        createInfo.poolSizeCount = info.PoolSizeCount;
+        createInfo.pPoolSizes = info.PoolSizes;
+
+        VK_CHECK(vkCreateDescriptorPool(device, &createInfo, nullptr, &pool));
+
+        return pool;
+    }
+
+    void DestoryDescriptorPool(const VkDevice& device, VkDescriptorPool& pool) {
+
+        vkDestroyDescriptorPool(device, pool, nullptr);
+        pool = VK_NULL_HANDLE;
+    }
+
+    std::vector<VkDescriptorSet> AllocateDescriptorSets(const VkDevice& device, const DescriptorSetAllocateInfo& info) {
+
+        VkDescriptorSetAllocateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        createInfo.descriptorPool = info.DescriptorPool;
+        createInfo.descriptorSetCount = info.DescriptorSetCount;
+        createInfo.pSetLayouts = info.SetLayouts;
+
+        std::vector<VkDescriptorSet> sets(info.DescriptorSetCount);
+
+        VK_CHECK(vkAllocateDescriptorSets(device, &createInfo, sets.data()));
+
+        return std::move(sets);
+    }
+
+    void ImageLayoutTransition(const ImageLayoutTransitionInfo info) {
+
+        VkImageMemoryBarrier barrier = {};
+        barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+        barrier.oldLayout = info.OldLayout;
+        barrier.newLayout = info.NewLayout;
+        barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+        barrier.image = info.Image;
+        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        barrier.subresourceRange.baseMipLevel = 0;
+        barrier.subresourceRange.levelCount = 1;
+        barrier.subresourceRange.baseArrayLayer = 0;
+        barrier.subresourceRange.layerCount = 1;
+
+        VkPipelineStageFlags sourceStage = {};
+        VkPipelineStageFlags destinationStage = {};
+
+        if (info.OldLayout == VK_IMAGE_LAYOUT_UNDEFINED && info.NewLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL) {
+
+            barrier.srcAccessMask = 0;
+            barrier.dstAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            destinationStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        }
+        else if (info.OldLayout == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL && info.NewLayout == VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL) {
+
+            barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT;
+
+            sourceStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+            destinationStage = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        }
+        else {
+
+            BRQ_ASSERT("THIS DOESNT WORK");
+        }
+
+        vkCmdPipelineBarrier(
+            info.CommandBuffer,
+            sourceStage, destinationStage,
+            0,
+            0, nullptr,
+            0, nullptr,
+            1, &barrier
+        );
+    }
+
+    void CopyBufferToImage(const CopyBufferToImageInfo& info) {
+
+        VkBufferImageCopy region = {};
+        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+        region.imageSubresource.layerCount = 1;
+        region.imageOffset = { 0, 0, 0 };
+        region.imageExtent = { info.Width, info.Height, 1U };
+
+        vkCmdCopyBufferToImage(info.CommandBuffer, info.Buffer, info.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
+    }
+
+    VkSampler CreateSampler(const VkDevice& device, const SamplerCreateInfo& info) {
+
+        VkSampler sampler = VK_NULL_HANDLE;
+
+        VkSamplerCreateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO;
+        createInfo.flags = info.Flags;
+        createInfo.magFilter = info.MagFilter;
+        createInfo.minFilter = info.MinFilter;
+        createInfo.mipmapMode = info.MipmapMode;
+        createInfo.addressModeU = info.AddressModeU;
+        createInfo.addressModeV = info.AddressModeV;
+        createInfo.addressModeW = info.AddressModeW;
+        createInfo.mipLodBias = info.MipLodBias;
+        createInfo.anisotropyEnable = info.AnisotropyEnable;
+        createInfo.maxAnisotropy = info.MaxAnisotropy;
+        createInfo.compareEnable = info.CompareEnable;
+        createInfo.compareOp = info.CompareOp;
+        createInfo.minLod = info.MinLod;
+        createInfo.maxLod = info.MaxLod;
+        createInfo.borderColor = info.BorderColor;
+        createInfo.unnormalizedCoordinates = info.UnnormalizedCoordinates;
+
+        VK_CHECK(vkCreateSampler(device, &createInfo, nullptr, &sampler));
+
+        return sampler;
+    }
+
+    void DestroySampler(const VkDevice& device, VkSampler& sampler) {
+
+        vkDestroySampler(device, sampler, nullptr);
+        sampler = VK_NULL_HANDLE;
+    }
 
 } }

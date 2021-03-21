@@ -18,7 +18,7 @@ namespace BRQ {
 		m_Yaw = -90.f;
 		m_Pitch = 0.0f;
 		m_Speed = 0.001f;
-		m_MouseSensitivity = 0.03f;
+		m_MouseSensitivity = 0.007f;
 	}
 
 	void Camera::Update() {

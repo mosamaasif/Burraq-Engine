@@ -45,6 +45,7 @@ namespace BRQ {
 
                 fastObjIndex gi = obj->indices[indexOffset + j];
 
+
                 Vertex v;
                 v.x =  obj->positions[gi.p * 3 + 0];
                 v.y =  obj->positions[gi.p * 3 + 1];
@@ -52,6 +53,8 @@ namespace BRQ {
                 v.nx = obj->normals[gi.n * 3 + 0];
                 v.ny = obj->normals[gi.n * 3 + 1];
                 v.nz = obj->normals[gi.n * 3 + 2];
+                v.u =  obj->texcoords[gi.t * 2 + 0];
+                v.v =  obj->texcoords[gi.t * 2 + 1];
 
                 if (j >= 3)
                 {
@@ -90,7 +93,7 @@ namespace BRQ {
         vertexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vertexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-        m_VertexBuffer = VK::CreateBuffer(device, vertexCreateInfo);
+        m_VertexBuffer = VK::CreateBuffer(vertexCreateInfo);
 
         VK::BufferCreateInfo indexCreateInfo = {};
         indexCreateInfo.Size = m_IndexCount * sizeof(U32);
@@ -99,7 +102,7 @@ namespace BRQ {
         indexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         indexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-        m_IndexBuffer = VK::CreateBuffer(device, indexCreateInfo);
+        m_IndexBuffer = VK::CreateBuffer(indexCreateInfo);
 
         VK::CommandPoolCreateInfo poolInfo = {};
         poolInfo.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -145,9 +148,7 @@ namespace BRQ {
 
     void Mesh::DestroyMesh() {
 
-        VkDevice device = RenderContext::GetInstance()->GetDevice();
-
-        VK::DestoryBuffer(device, m_VertexBuffer);
-        VK::DestoryBuffer(device, m_IndexBuffer);
+        VK::DestoryBuffer(m_VertexBuffer);
+        VK::DestoryBuffer(m_IndexBuffer);
     }
 }

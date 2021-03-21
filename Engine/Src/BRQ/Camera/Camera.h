@@ -39,6 +39,5 @@ namespace BRQ {
 
 	private:
 		void CalculateVectors();
-
     };
 }

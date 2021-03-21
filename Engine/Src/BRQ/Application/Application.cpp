@@ -20,9 +20,6 @@ namespace BRQ {
         m_Window = Window::Create(m_WindowProperties = props);
         m_Window->SetEventCallbackFunction(BRQ_BIND_EVENT_FN(OnEvent));
 
-        // TODO: Defer Pipeline Building. This is temporary
-        Renderer::SubmitResources({ {"Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
-                                    {"Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
         Renderer::Init(m_Window);
         m_Renderer = Renderer::GetInstance();
 
@@ -30,6 +27,9 @@ namespace BRQ {
 
         m_CameraController = CameraController(m_Window->GetWidth(), m_Window->GetHeight(), 60.0f);
         m_Minimized = false;
+
+        m_Renderer->SubmitResources({ {"Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
+                                    {"Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
     }
 
     Application::~Application() {

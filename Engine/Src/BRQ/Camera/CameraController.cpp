@@ -11,7 +11,6 @@ namespace BRQ {
 
 		CaptureCamera(capture);
 
-
 		m_Width = (F32)width;
 		m_Height = (F32)height;
 
@@ -28,8 +27,8 @@ namespace BRQ {
 		F32 deltaX = pos.x - (I32)m_Camera.m_WindowCenterX;
 		F32 deltaY = (I32)m_Camera.m_WindowCenterY - pos.y;
 
-		F64 yaw = deltaX * m_Camera.m_MouseSensitivity;
-		F64 pitch = deltaY * m_Camera.m_MouseSensitivity;
+		F64 yaw = (F64)deltaX * (F64)m_Camera.m_MouseSensitivity;
+		F64 pitch = (F64)deltaY * (F64)m_Camera.m_MouseSensitivity;
 
 		m_Camera.m_Yaw += (F32)(yaw);
 		m_Camera.m_Pitch += (F32)(pitch);

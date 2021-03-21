@@ -6,7 +6,7 @@
 #include "FileSink.h"
 #include "Formatter.h"
 
-#define MAX_LOGGER_BUFFER   1024
+#define MAX_LOGGER_BUFFER   4096
 
 namespace BRQ {
 

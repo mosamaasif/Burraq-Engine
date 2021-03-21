@@ -62,11 +62,11 @@
       <PreprocessorDefinitions>BRQ_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
-      <DisableSpecificWarnings>26812;26495;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26812;26495;26451;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
@@ -87,7 +87,7 @@
       <PreprocessorDefinitions>BRQ_RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -97,7 +97,7 @@
       <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
       <OmitFramePointers>false</OmitFramePointers>
       <LanguageStandard_C>stdc17</LanguageStandard_C>
-      <DisableSpecificWarnings>26812;26495;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <DisableSpecificWarnings>26812;26495;26451;%(DisableSpecificWarnings)</DisableSpecificWarnings>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
@@ -119,6 +119,8 @@
     <ClCompile Include="Src\BRQ\Camera\CameraController.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Mesh.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Texture2D.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\TextureSampler2D.cpp" />
     <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
@@ -140,6 +142,8 @@
     <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
     <ClInclude Include="Src\BRQ\Camera\Camera.h" />
     <ClInclude Include="Src\BRQ\Camera\CameraController.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Texture2D.h" />
+    <ClInclude Include="Src\BRQ\Graphics\TextureSampler2D.h" />
     <ClInclude Include="Src\BRQ\Math\Math.h" />
     <ClInclude Include="Src\BRQ\Utilities\Timer.h" />
     <ClInclude Include="Src\Engine.h" />
