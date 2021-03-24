@@ -120,7 +120,6 @@
     <ClCompile Include="Src\BRQ\Graphics\Mesh.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Texture2D.cpp" />
-    <ClCompile Include="Src\BRQ\Graphics\TextureSampler2D.cpp" />
     <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
@@ -143,7 +142,6 @@
     <ClInclude Include="Src\BRQ\Camera\Camera.h" />
     <ClInclude Include="Src\BRQ\Camera\CameraController.h" />
     <ClInclude Include="Src\BRQ\Graphics\Texture2D.h" />
-    <ClInclude Include="Src\BRQ\Graphics\TextureSampler2D.h" />
     <ClInclude Include="Src\BRQ\Math\Math.h" />
     <ClInclude Include="Src\BRQ\Utilities\Timer.h" />
     <ClInclude Include="Src\Engine.h" />

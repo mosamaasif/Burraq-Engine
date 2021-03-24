@@ -3,7 +3,6 @@
 #include "Events/Event.h"
 #include "Camera/Camera.h"
 #include "Texture2D.h"
-#include "TextureSampler2D.h"
 #include "Platform/Vulkan/VKShader.h"
 #include "Platform/Vulkan/RenderContext.h"
 
@@ -18,13 +17,13 @@ namespace BRQ {
 
         RenderContext*                                                      m_RenderContext;
         
-        TextureSampler2D*                                                   m_TextureSampler2D;
         Texture2D*                                                          m_Texture2D;
 
         VkRenderPass												        m_RenderPass;
         VkPipelineLayout											        m_Layout;
         VkPipeline      											        m_GraphicsPipeline;
         VkDescriptorSetLayout                                               m_DescriptorSetLayout;
+        VkSampler                                                           m_TextureSampler2D;
 
         std::vector<VkFramebuffer>                                          m_Framebuffers;
         std::vector<VkDescriptorPool>                                       m_DescriptorPool;

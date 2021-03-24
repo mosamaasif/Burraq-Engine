@@ -170,13 +170,12 @@ namespace BRQ {
         CreateDescriptorPool();
         CreateDescriptorSets();
         CreatePipelineLayout();
-
         CreateCommands();
         CreateSyncronizationPrimitives();
 
         //mesh.LoadMesh("Models/monkey_flat.obj");
-        //mesh.LoadMesh("Models/Lion.obj");
-        mesh.LoadMesh("Models/crate.obj");
+        mesh.LoadMesh("Models/Lion.obj");
+        //mesh.LoadMesh("Models/crate.obj");
     }
 
     void Renderer::DestroyInternal() {
@@ -190,6 +189,8 @@ namespace BRQ {
         DestroyGraphicsPipeline();
         DestroyPipelineLayout();
         DestroyDescriptorPool();
+        DestroyTextureSampler2D();
+        DestroyTexture();
         DestoryDescriptorSetLayout();
         DestroyFramebuffers();
         DestroyRenderPass();
@@ -558,7 +559,7 @@ namespace BRQ {
             VkDescriptorImageInfo imageInfo = {};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = m_Texture2D->GetImageView().ImageView;
-            imageInfo.sampler = m_TextureSampler2D->GetTextureSampler2D();
+            imageInfo.sampler = m_TextureSampler2D;
 
             VkWriteDescriptorSet descriptorWrites = {};
 
@@ -576,17 +577,33 @@ namespace BRQ {
 
     void Renderer::CreateTextureSampler2D() {
 
-        m_TextureSampler2D = new TextureSampler2D();
+        VkPhysicalDeviceProperties properties = VK::GetPhysicalDeviceProperties(m_RenderContext->GetPhysicalDevice());
+
+        VK::SamplerCreateInfo info = {};
+        info.MagFilter = VK_FILTER_LINEAR;
+        info.MinFilter = VK_FILTER_LINEAR;
+        info.AddressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.AddressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.AddressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
+        info.AnisotropyEnable = VK_TRUE;
+        info.MaxAnisotropy = properties.limits.maxSamplerAnisotropy;
+        info.BorderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+        info.UnnormalizedCoordinates = VK_FALSE;
+        info.CompareEnable = VK_FALSE;
+        info.CompareOp = VK_COMPARE_OP_ALWAYS;
+        info.MipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
+
+        m_TextureSampler2D = VK::CreateSampler(m_RenderContext->GetDevice(), info);
     }
 
     void Renderer::DestroyTextureSampler2D() {
 
-        delete m_TextureSampler2D;
+        VK::DestroySampler(m_RenderContext->GetDevice(), m_TextureSampler2D);
     }
 
     void Renderer::CreateTexture() {
 
-        m_Texture2D = new Texture2D("Models/crate.jpg");
+        m_Texture2D = new Texture2D("Models/Lion.jpg");
     }
 
     void Renderer::DestroyTexture() {

@@ -13,8 +13,12 @@ namespace BRQ {
         LoadTexture(filename);
     }
 
-    Texture2D::~Texture2D()
-    {
+    Texture2D::~Texture2D() {
+
+        auto context = RenderContext::GetInstance();
+
+        VK::DestroyImageView(context->GetDevice(), m_ImageView);
+        VK::DestroyImage(m_Image);
     }
 
     void Texture2D::LoadTexture(const std::string_view filename) {
@@ -22,6 +26,8 @@ namespace BRQ {
         I32 width;
         I32 height;
         I32 channels;
+
+        stbi_set_flip_vertically_on_load(true);
 
         stbi_uc* image = stbi_load(filename.data(), &width, &height, &channels, STBI_rgb_alpha);
 
@@ -120,6 +126,7 @@ namespace BRQ {
         VK::QueueWaitIdle(context->GetGraphicsAndPresentationQueue());
 
         VK::DestroyCommandPool(context->GetDevice(), pool);
+        VK::DestoryBuffer(buffer);
 
         VK::ImageViewCreateInfo viewInfo = {};
         viewInfo.Image = m_Image.ImageAllocation.Image;
@@ -132,8 +139,6 @@ namespace BRQ {
         viewInfo.SubresourceRange.layerCount = 1;
 
         m_ImageView = VK::CreateImageView(context->GetDevice(), viewInfo);
-
-        VK::DestoryBuffer(buffer);
     }
 
 }

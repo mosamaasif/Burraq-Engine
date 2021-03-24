@@ -22,7 +22,6 @@
     <ClCompile Include="Src\BRQ\Camera\CameraController.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\Timer.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Texture2D.cpp" />
-    <ClCompile Include="Src\BRQ\Graphics\TextureSampler2D.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -63,7 +62,6 @@
     <ClInclude Include="Src\BRQ\Camera\CameraController.h" />
     <ClInclude Include="Src\BRQ\Utilities\Timer.h" />
     <ClInclude Include="Src\BRQ\Graphics\Texture2D.h" />
-    <ClInclude Include="Src\BRQ\Graphics\TextureSampler2D.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />

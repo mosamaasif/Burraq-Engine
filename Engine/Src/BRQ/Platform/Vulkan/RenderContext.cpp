@@ -100,8 +100,12 @@ namespace BRQ {
 
     void RenderContext::CreateDevice() {
 
+        VkPhysicalDeviceFeatures deviceFeatures = {};
+        deviceFeatures.samplerAnisotropy = VK_TRUE;
+
         VK::DeviceCreateInfo info = {};
         info.QueueTypes = m_RequestedQueues;
+        info.EnabledFeatures = deviceFeatures;
 
         m_Device = VK::CreateDevice(m_PhysicalDevice, m_Surface, info);
     }

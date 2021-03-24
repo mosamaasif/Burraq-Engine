@@ -240,6 +240,22 @@ namespace BRQ { namespace VK {
         return index;
     }
 
+    VkPhysicalDeviceProperties GetPhysicalDeviceProperties(const VkPhysicalDevice& physicalDevice) {
+
+        VkPhysicalDeviceProperties properties;
+        vkGetPhysicalDeviceProperties(physicalDevice, &properties);
+
+        return properties;
+    }
+
+    VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures(const VkPhysicalDevice& physicalDevice) {
+
+        VkPhysicalDeviceFeatures features;
+        vkGetPhysicalDeviceFeatures(physicalDevice, &features);
+
+        return features;
+    }
+
     VkPhysicalDevice SeletePhysicalDevice(const VkInstance& instance, const VkSurfaceKHR& surface) {
 
         U32 deviceCount = 0;
@@ -255,11 +271,9 @@ namespace BRQ { namespace VK {
 
         for (const auto& device : physicalDevices) {
 
-            VkPhysicalDeviceProperties props;
-            vkGetPhysicalDeviceProperties(device, &props);
+            VkPhysicalDeviceProperties props = GetPhysicalDeviceProperties(device);
 
-            VkPhysicalDeviceFeatures features;
-            vkGetPhysicalDeviceFeatures(device, &features);
+            VkPhysicalDeviceFeatures features = GetPhysicalDeviceFeatures(device);
 
             VkPhysicalDeviceMemoryProperties memProps;
             vkGetPhysicalDeviceMemoryProperties(device, &memProps);
@@ -294,6 +308,7 @@ namespace BRQ { namespace VK {
 
         return physicalDevice;
     }
+
 
     VkDevice CreateDevice(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, const DeviceCreateInfo& info) {
 

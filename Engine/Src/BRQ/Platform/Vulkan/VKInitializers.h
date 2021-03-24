@@ -387,6 +387,9 @@ namespace BRQ { namespace VK {
 
     U32 GetQueueFamilyIndex(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, QueueType type);
 
+    VkPhysicalDeviceProperties GetPhysicalDeviceProperties(const VkPhysicalDevice& physicalDevice);
+    VkPhysicalDeviceFeatures GetPhysicalDeviceFeatures(const VkPhysicalDevice& physicalDevice);
+
     VkPhysicalDevice SeletePhysicalDevice(const VkInstance& instance, const VkSurfaceKHR& surface);
 
     VkDevice CreateDevice(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, const DeviceCreateInfo& info = {});
