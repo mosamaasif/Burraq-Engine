@@ -10,16 +10,7 @@
 
 namespace BRQ {
 
-    Mesh::Mesh()
-        : m_VertexBuffer({}), m_IndexBuffer({}), m_VertexCount(0), m_IndexCount(0) { }
-
-    Mesh::Mesh(const std::string_view& filename)
-        : m_VertexBuffer({}), m_IndexBuffer({}), m_VertexCount(0), m_IndexCount(0) {
-
-        LoadMesh(filename);
-    }
-
-    void Mesh::LoadMesh(std::string_view filename) {
+    void Mesh::LoadMesh(const std::string_view& filename) {
 
         fastObjMesh* obj = fast_obj_read(filename.data());
 
@@ -50,11 +41,11 @@ namespace BRQ {
                 v.x =  obj->positions[gi.p * 3 + 0];
                 v.y =  obj->positions[gi.p * 3 + 1];
                 v.z =  obj->positions[gi.p * 3 + 2];
-                v.nx = obj->normals[gi.n * 3 + 0];
-                v.ny = obj->normals[gi.n * 3 + 1];
-                v.nz = obj->normals[gi.n * 3 + 2];
                 v.u =  obj->texcoords[gi.t * 2 + 0];
                 v.v =  obj->texcoords[gi.t * 2 + 1];
+                //v.nx = obj->normals[gi.n * 3 + 0];
+                //v.ny = obj->normals[gi.n * 3 + 1];
+                //v.nz = obj->normals[gi.n * 3 + 2];
 
                 if (j >= 3)
                 {
@@ -74,35 +65,44 @@ namespace BRQ {
 
         std::vector<U32> remap(totalIndices);
 
-        size_t total_vertices = meshopt_generateVertexRemap(&remap[0], NULL, totalIndices, &vertices[0], totalIndices, sizeof(Vertex));
+        U64 total_vertices = meshopt_generateVertexRemap(&remap[0], NULL, totalIndices, &vertices[0], totalIndices, sizeof(Vertex));
 
-        std::vector<U32> indexBuffer(m_IndexCount = totalIndices);
-        meshopt_remapIndexBuffer(&indexBuffer[0], NULL, totalIndices, &remap[0]);
+        MeshData data;
+        data.Indicies.resize(totalIndices);
+        data.Verticies.resize(total_vertices * sizeof(Vertex));
 
-        std::vector<Vertex> vertexBuffer(m_VertexCount = total_vertices);
-        meshopt_remapVertexBuffer(&vertexBuffer[0], &vertices[0], totalIndices, sizeof(Vertex), &remap[0]);
+        meshopt_remapIndexBuffer(&data.Indicies[0], NULL, totalIndices, &remap[0]);
+        meshopt_remapVertexBuffer(&data.Verticies[0], &vertices[0], totalIndices, sizeof(Vertex), &remap[0]);
+
+        LoadMesh(data);
+    }
+
+    void Mesh::LoadMesh(const MeshData& meshData) {
 
         VkDevice device = RenderContext::GetInstance()->GetDevice();
         U32 queueIndex = RenderContext::GetInstance()->GetGraphicsAndPresentationQueueIndex();
         VkQueue queue = RenderContext::GetInstance()->GetGraphicsAndPresentationQueue();
 
+        VertexCount = meshData.Verticies.size();
+        IndexCount = meshData.Indicies.size();
+
         VK::BufferCreateInfo vertexCreateInfo = {};
-        vertexCreateInfo.Size = m_VertexCount * sizeof(Vertex);
+        vertexCreateInfo.Size = VertexCount * sizeof(meshData.Verticies[0]);
         vertexCreateInfo.Flags = 0;
         vertexCreateInfo.Usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
         vertexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         vertexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-        m_VertexBuffer = VK::CreateBuffer(vertexCreateInfo);
+        VertexBuffer = VK::CreateBuffer(vertexCreateInfo);
 
         VK::BufferCreateInfo indexCreateInfo = {};
-        indexCreateInfo.Size = m_IndexCount * sizeof(U32);
+        indexCreateInfo.Size = IndexCount * sizeof(U32);
         indexCreateInfo.Flags = 0;
         indexCreateInfo.Usage = VK_BUFFER_USAGE_INDEX_BUFFER_BIT;
         indexCreateInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         indexCreateInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
 
-        m_IndexBuffer = VK::CreateBuffer(indexCreateInfo);
+        IndexBuffer = VK::CreateBuffer(indexCreateInfo);
 
         VK::CommandPoolCreateInfo poolInfo = {};
         poolInfo.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
@@ -118,9 +118,9 @@ namespace BRQ {
         auto cmds = VK::AllocateCommandBuffers(device, allocateInfo);
 
         VK::UploadBufferInfo vertexUpload = {};
-        vertexUpload.DestinationBuffer = &m_VertexBuffer;
-        vertexUpload.Data = vertexBuffer.data();
-        vertexUpload.Size = m_VertexCount * sizeof(Vertex);
+        vertexUpload.DestinationBuffer = &VertexBuffer;
+        vertexUpload.Data = meshData.Verticies.data();
+        vertexUpload.Size = VertexCount * sizeof(meshData.Verticies[0]);
         vertexUpload.Queue = queue;
         vertexUpload.QueueFamilyIndex = queueIndex;
         vertexUpload.CommandBuffer = cmds[0];
@@ -128,9 +128,9 @@ namespace BRQ {
         vertexUpload.WaitForUpload = true;
 
         VK::UploadBufferInfo indexUpload = {};
-        indexUpload.DestinationBuffer = &m_IndexBuffer;
-        indexUpload.Data = indexBuffer.data();
-        indexUpload.Size = m_IndexCount * sizeof(U32);
+        indexUpload.DestinationBuffer = &IndexBuffer;
+        indexUpload.Data = meshData.Indicies.data();
+        indexUpload.Size = IndexCount * sizeof(U32);
         indexUpload.Queue = queue;
         indexUpload.QueueFamilyIndex = queueIndex;
         indexUpload.CommandBuffer = cmds[1];
@@ -148,7 +148,7 @@ namespace BRQ {
 
     void Mesh::DestroyMesh() {
 
-        VK::DestoryBuffer(m_VertexBuffer);
-        VK::DestoryBuffer(m_IndexBuffer);
+        VK::DestoryBuffer(VertexBuffer);
+        VK::DestoryBuffer(IndexBuffer);
     }
 }

@@ -147,6 +147,10 @@ namespace BRQ {
 
         auto capabilities = VK::GetSurfaceCapabilities(m_PhysicalDevice, m_Surface);
 
+        VkImageFormatProperties i;
+
+        vkGetPhysicalDeviceImageFormatProperties(m_PhysicalDevice, surfaceFormat.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, 0, &i);
+
         U32 imageCount = capabilities.minImageCount + 1;
 
         if (capabilities.maxImageCount > 0 && imageCount > capabilities.maxImageCount) {

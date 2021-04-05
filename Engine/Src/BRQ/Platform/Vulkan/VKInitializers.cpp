@@ -392,27 +392,40 @@ namespace BRQ { namespace VK {
 
                 switch (candidate.format) {
 
-                case VK_FORMAT_R8G8B8A8_UNORM:
                 case VK_FORMAT_B8G8R8A8_UNORM:
-                case VK_FORMAT_A8B8G8R8_UNORM_PACK32:
+                case VK_FORMAT_R8G8B8A8_UNORM:
                     format = candidate;
                     break;
 
                 default:
                     break;
                 }
-
-                if (format.format != VK_FORMAT_UNDEFINED) {
-
-                    break;
-                }
             }
 
             if (format.format == VK_FORMAT_UNDEFINED) {
 
-                format = formats[0];
+                for (const auto& candidate : formats) {
+
+                    switch (candidate.format) {
+
+                    case VK_FORMAT_B8G8R8A8_SRGB:
+                    case VK_FORMAT_R8G8B8A8_SRGB:
+                        format = candidate;
+                        break;
+
+                    default:
+                        break;
+                    }
+
+                }
+
+                if (format.format == VK_FORMAT_UNDEFINED) {
+
+                    format = formats[0];
+                }
             }
         }
+
         return format;
     }
 
@@ -1106,11 +1119,7 @@ namespace BRQ { namespace VK {
         barrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         barrier.image = info.Image;
-        barrier.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        barrier.subresourceRange.baseMipLevel = 0;
-        barrier.subresourceRange.levelCount = 1;
-        barrier.subresourceRange.baseArrayLayer = 0;
-        barrier.subresourceRange.layerCount = 1;
+        barrier.subresourceRange = info.SubresourceRange;
 
         VkPipelineStageFlags sourceStage = {};
         VkPipelineStageFlags destinationStage = {};
@@ -1144,17 +1153,6 @@ namespace BRQ { namespace VK {
             0, nullptr,
             1, &barrier
         );
-    }
-
-    void CopyBufferToImage(const CopyBufferToImageInfo& info) {
-
-        VkBufferImageCopy region = {};
-        region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        region.imageSubresource.layerCount = 1;
-        region.imageOffset = { 0, 0, 0 };
-        region.imageExtent = { info.Width, info.Height, 1U };
-
-        vkCmdCopyBufferToImage(info.CommandBuffer, info.Buffer, info.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
     }
 
     VkSampler CreateSampler(const VkDevice& device, const SamplerCreateInfo& info) {

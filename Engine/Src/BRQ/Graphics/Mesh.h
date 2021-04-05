@@ -9,30 +9,30 @@ namespace BRQ {
     struct Vertex {
 
         F32 x, y, z;
-        F32 nx, ny, nz;
         F32 u, v;
+        //F32 nx, ny, nz;
     };
 
-    class Mesh {
+    struct SkyboxVertex {
 
-    private:
-        VK::Buffer  m_VertexBuffer;
-        VK::Buffer  m_IndexBuffer;
-        U64         m_VertexCount;
-        U64         m_IndexCount;
+        F32 x, y, z;
+    };
 
-    public:
-        Mesh();
-        Mesh(const std::string_view& filename);
-        ~Mesh() = default;
+    struct MeshData {
 
-        void LoadMesh(std::string_view filename);
+        std::vector<F32> Verticies;
+        std::vector<U32> Indicies;
+    };
 
+    struct Mesh {
+
+        VK::Buffer  VertexBuffer;
+        VK::Buffer  IndexBuffer;
+        U64         VertexCount;
+        U64         IndexCount;
+
+        void LoadMesh(const std::string_view& filename);
+        void LoadMesh(const MeshData& meshData);
         void DestroyMesh();
-
-        const VkBuffer& GetVertexBuffer() const { return m_VertexBuffer.BufferAllocation.Buffer; }
-        const VkBuffer& GetIndexBuffer() const { return m_IndexBuffer.BufferAllocation.Buffer; }
-        U64 GetVertexCount() const { return m_VertexCount; }
-        U64 GetIndexCount() const { return m_IndexCount; }
     };
 }

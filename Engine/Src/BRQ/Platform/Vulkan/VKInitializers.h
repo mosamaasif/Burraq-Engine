@@ -336,20 +336,12 @@ namespace BRQ { namespace VK {
 
     BRQ_ALIGN(16) struct ImageLayoutTransitionInfo {
 
-        VkImage         Image = {};
-        VkFormat        Format = {};
-        VkImageLayout   OldLayout = {};
-        VkImageLayout   NewLayout = {};
-        VkCommandBuffer CommandBuffer = {};
-    };
-
-    BRQ_ALIGN(16) struct CopyBufferToImageInfo {
-
-        VkBuffer        Buffer = {};
-        VkImage         Image = {};
-        U32             Width = {};
-        U32             Height = {};
-        VkCommandBuffer CommandBuffer = {};
+        VkImage                 Image = {};
+        VkFormat                Format = {};
+        VkImageLayout           OldLayout = {};
+        VkImageLayout           NewLayout = {};
+        VkImageSubresourceRange SubresourceRange = {};
+        VkCommandBuffer         CommandBuffer = {};
     };
 
     BRQ_ALIGN(16) struct SamplerCreateInfo {
@@ -476,8 +468,6 @@ namespace BRQ { namespace VK {
     std::vector<VkDescriptorSet> AllocateDescriptorSets(const VkDevice& device, const DescriptorSetAllocateInfo& info = {});
 
     void ImageLayoutTransition(const ImageLayoutTransitionInfo info = {});
-
-    void CopyBufferToImage(const CopyBufferToImageInfo& info = {});
 
     VkSampler CreateSampler(const VkDevice& device, const SamplerCreateInfo& info = {});
     void DestroySampler(const VkDevice& device, VkSampler& sampler);

@@ -41,6 +41,9 @@ namespace BRQ {
 
 		F32 velocity = m_Camera.m_Speed * dt;
 
+		if (input->IsKeyPressed(Key::KEY_RSHIFT))
+			velocity = m_Camera.m_Speed * dt * 3.0f;
+
 		if (input->IsKeyPressed(Key::KEY_W))
 			m_Camera.m_Position += m_Camera.m_Front * velocity;
 		if (input->IsKeyPressed(Key::KEY_S))

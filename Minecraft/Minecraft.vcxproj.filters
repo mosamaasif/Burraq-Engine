@@ -3,4 +3,17 @@
   <ItemGroup>
     <ClCompile Include="Src\Minecraft.cpp" />
   </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="Src\World\WorldConfig.h" />
+    <ClInclude Include="Src\World\Blocks\Block.h" />
+    <ClInclude Include="Src\World\Blocks\BlockData.h" />
+    <ClInclude Include="Src\World\Chunks\Chunk.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Shaders\ShaderCompilerScript.bat" />
+    <None Include="Shaders\shader.vert.spv" />
+    <None Include="Shaders\shader.vert" />
+    <None Include="Shaders\shader.frag.spv" />
+    <None Include="Shaders\shader.frag" />
+  </ItemGroup>
 </Project>

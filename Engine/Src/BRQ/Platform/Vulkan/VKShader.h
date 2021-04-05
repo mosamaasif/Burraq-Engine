@@ -22,21 +22,17 @@ namespace BRQ {
         };
 
     private:
-        VkShaderModule                                      m_ShaderModule;
-        VkDevice                                            m_Device;
-
-        static std::vector<VkPipelineShaderStageCreateInfo> s_ShaderStages;
+        VkShaderModule                  m_ShaderModule;
+        VkPipelineShaderStageCreateInfo m_PipelineShaderStageInfo;
 
     public:
         VKShader();
         ~VKShader() = default;
 
         void Create(const VkDevice& device, const std::string_view filename, ShaderType type);
-        void Destroy();
+        void Destroy(const VkDevice& device);
 
-        const VkShaderModule& GetVulkanShaderModule() const { return m_ShaderModule; }
-
-        static std::vector<VkPipelineShaderStageCreateInfo> GetVulkanShaderStageInfo() { return s_ShaderStages; };
+        VkPipelineShaderStageCreateInfo GetPipelineShaderStageInfo() const { return m_PipelineShaderStageInfo; }
 
     private:
         VkShaderStageFlagBits ShaderTypeToVkShaderStageFlagBit(ShaderType type) const;

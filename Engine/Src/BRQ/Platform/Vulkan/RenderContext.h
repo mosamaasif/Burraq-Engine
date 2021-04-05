@@ -2,7 +2,7 @@
 
 #include "VKInitializers.h"
 
-#define FRAME_LAG   2
+#define FRAME_LAG   3
 
 namespace BRQ {
 

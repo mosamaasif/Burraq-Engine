@@ -25,11 +25,14 @@ namespace BRQ {
 
         m_InputManager = Input::GetInstance();
 
-        m_CameraController = CameraController(m_Window->GetWidth(), m_Window->GetHeight(), 60.0f);
+        m_CameraController = CameraController(m_Window->GetWidth(), m_Window->GetHeight(), 80.0f);
         m_Minimized = false;
 
-        m_Renderer->SubmitResources({ {"Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
-                                    {"Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
+        m_Renderer->SubmitShaders({ {"Resources/Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
+                                    {"Resources/Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
+
+        m_Renderer->SubmitSkyboxShaders({ {"Resources/Shaders/skyboxShader.vert.spv", VKShader::ShaderType::Vertex},
+                                          {"Resources/Shaders/skyboxShader.frag.spv", VKShader::ShaderType::Fragment} });
     }
 
     Application::~Application() {

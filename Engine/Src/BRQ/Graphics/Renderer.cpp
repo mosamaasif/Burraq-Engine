@@ -11,16 +11,20 @@
 #include "Platform/Vulkan/VKCommands.h"
 
 #include "Math/Math.h"
+#include "Skybox.h"
+
 
 namespace BRQ {
 
     // this shouldnt be here
     Mesh mesh;
+    Skybox skybox;
+
     Renderer* Renderer::s_Renderer = nullptr;
 
     Renderer::Renderer()
-        : m_RenderContext(nullptr), m_RenderPass(nullptr),
-        m_Layout(nullptr), m_GraphicsPipeline(nullptr), m_Window(nullptr) { }
+        : m_RenderContext(nullptr), m_RenderPass(VK_NULL_HANDLE),
+        m_Layout(VK_NULL_HANDLE), m_SkyboxLayout(), m_GraphicsPipeline(VK_NULL_HANDLE), m_SkyboxPipeline(VK_NULL_HANDLE), m_Window(nullptr) { }
 
     void Renderer::Init(const Window* window) {
 
@@ -36,11 +40,18 @@ namespace BRQ {
         delete s_Renderer;
     }
 
-    void Renderer::SubmitResources(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
+    void Renderer::SubmitShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
 
         m_ShaderResources = resources;
 
         CreateGraphicsPipeline();
+    }
+
+    void Renderer::SubmitSkyboxShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
+
+        m_SkyboxShaderResources = resources;
+
+        CreateSkyboxPipeline();
     }
 
     void Renderer::BeginScene(const Camera& camera) {
@@ -104,16 +115,33 @@ namespace BRQ {
 
         vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
         VkDeviceSize offset = 0;
-        vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.GetVertexBuffer(), &offset);
-        vkCmdBindIndexBuffer(buffer, mesh.GetIndexBuffer(), 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.VertexBuffer.BufferAllocation.Buffer, &offset);
+        vkCmdBindIndexBuffer(buffer, mesh.IndexBuffer.BufferAllocation.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         glm::mat4 pv = camera.GetProjectionMatrix() * camera.GetViewMatrix();
 
         vkCmdPushConstants(buffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pv[0]);
-
         vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet[index], 0, nullptr);
 
-        vkCmdDrawIndexed(buffer, (U32)mesh.GetIndexCount(), 1, 0, 0, 0);
+        vkCmdDrawIndexed(buffer, (U32)mesh.IndexCount, 1, 0, 0, 0);
+
+        // ------------------------------------------------------
+
+        vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SkyboxPipeline);
+        offset = 0;
+
+        auto vBuffer = skybox.GetVertexBuffer().BufferAllocation.Buffer;
+        auto iBuffer = skybox.GetIndexBuffer().BufferAllocation.Buffer;
+
+        vkCmdBindVertexBuffers(buffer, 0, 1, &vBuffer, &offset);
+        vkCmdBindIndexBuffer(buffer, iBuffer, 0, VK_INDEX_TYPE_UINT32);
+
+
+        vkCmdPushConstants(buffer, m_SkyboxLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pv[0]);
+        vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SkyboxLayout, 0, 1, &m_SkyboxDescriptorSet[index], 0, nullptr);
+
+        vkCmdDrawIndexed(buffer, skybox.GetIndexCount(), 1, 0, 0, 0);
+
     }
 
     void Renderer::EndScene() {
@@ -166,16 +194,18 @@ namespace BRQ {
         CreateFramebuffers();
         CreateDescriptorSetLayout();
         CreateTexture();
-        CreateTextureSampler2D();
+        CreateSkybox();
         CreateDescriptorPool();
         CreateDescriptorSets();
-        CreatePipelineLayout();
+        CreatePipelineLayouts();
         CreateCommands();
         CreateSyncronizationPrimitives();
 
         //mesh.LoadMesh("Models/monkey_flat.obj");
-        mesh.LoadMesh("Models/Lion.obj");
-        //mesh.LoadMesh("Models/crate.obj");
+        mesh.LoadMesh("Resources/Models/Lion.obj");
+        //mesh.LoadMesh("Resources/Models/crate.obj");
+
+        skybox.Load();
     }
 
     void Renderer::DestroyInternal() {
@@ -183,13 +213,15 @@ namespace BRQ {
         vkDeviceWaitIdle(m_RenderContext->GetDevice());
 
         mesh.DestroyMesh();
+        skybox.DestroyMesh();
 
         DestroySyncronizationPrimitives();
         DestroyCommands();
         DestroyGraphicsPipeline();
-        DestroyPipelineLayout();
+        DestroySkyboxPipeline();
+        DestroyPipelineLayouts();
         DestroyDescriptorPool();
-        DestroyTextureSampler2D();
+        DestroySkybox();
         DestroyTexture();
         DestoryDescriptorSetLayout();
         DestroyFramebuffers();
@@ -205,26 +237,6 @@ namespace BRQ {
         DestroyFramebuffers();
         m_RenderContext->UpdateSwapchain();
         CreateFramebuffers();
-    }
-
-    void Renderer::LoadShaderResources() {
-
-        m_Shaders.resize(m_ShaderResources.size());
-
-        for (U64 i = 0; i < m_ShaderResources.size(); i++) {
-
-            const auto& resource = m_ShaderResources[i];
-
-            m_Shaders[i].Create(m_RenderContext->GetDevice(), resource.first, resource.second);
-        }
-    }
-
-    void Renderer::DestroyShaderRescources() {
-
-        for (U64 i = 0; i < m_Shaders.size(); i++) {
-
-            m_Shaders[i].Destroy();
-        }
     }
 
     void Renderer::CreateRenderPass() {
@@ -305,7 +317,7 @@ namespace BRQ {
         m_Framebuffers.clear();
     }
 
-    void Renderer::CreatePipelineLayout() {
+    void Renderer::CreatePipelineLayouts() {
 
         VkPushConstantRange push;
         push.offset = 0;
@@ -317,23 +329,25 @@ namespace BRQ {
         info.PushConstantRanges.push_back(push);
 
         m_Layout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
+        m_SkyboxLayout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
     }
 
-    void Renderer::DestroyPipelineLayout() {
+    void Renderer::DestroyPipelineLayouts() {
 
         VK::DestroyPipelineLayout(m_RenderContext->GetDevice(), m_Layout);
+        VK::DestroyPipelineLayout(m_RenderContext->GetDevice(), m_SkyboxLayout);
     }
 
     void Renderer::CreateGraphicsPipeline() {
 
-        LoadShaderResources();
+        std::vector shaders = std::move(LoadShaders(m_ShaderResources));
 
         VkVertexInputBindingDescription bindingDescription = {};
         bindingDescription.binding = 0;
         bindingDescription.stride = sizeof(Vertex);
         bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
 
-        VkVertexInputAttributeDescription attributeDescription[3] = { {}, {} };
+        VkVertexInputAttributeDescription attributeDescription[2] = { {}, {} };
 
         attributeDescription[0].binding = 0;
         attributeDescription[0].location = 0;
@@ -342,18 +356,18 @@ namespace BRQ {
 
         attributeDescription[1].binding = 0;
         attributeDescription[1].location = 1;
-        attributeDescription[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription[1].offset = offsetof(Vertex, nx);
+        attributeDescription[1].format = VK_FORMAT_R32G32_SFLOAT;
+        attributeDescription[1].offset = offsetof(Vertex, u);
 
-        attributeDescription[2].binding = 0;
-        attributeDescription[2].location = 2;
-        attributeDescription[2].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescription[2].offset = offsetof(Vertex, u);
+        //attributeDescription[2].binding = 0;
+        //attributeDescription[2].location = 1;
+        //attributeDescription[2].format = VK_FORMAT_R32G32B32_SFLOAT;
+        //attributeDescription[2].offset = offsetof(Vertex, nx);
 
         VkPipelineVertexInputStateCreateInfo vertexInfo = {};
         vertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
         vertexInfo.vertexBindingDescriptionCount = 1;
-        vertexInfo.vertexAttributeDescriptionCount = 3;
+        vertexInfo.vertexAttributeDescriptionCount = 2;
         vertexInfo.pVertexAttributeDescriptions = attributeDescription;
         vertexInfo.pVertexBindingDescriptions = &bindingDescription;
 
@@ -373,7 +387,108 @@ namespace BRQ {
         rasterizer.rasterizerDiscardEnable = VK_FALSE;
         rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
         rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;;
+        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
+        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+        rasterizer.depthBiasEnable = VK_FALSE; 
+
+        VkPipelineMultisampleStateCreateInfo multisampling = {};
+        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
+        multisampling.sampleShadingEnable = VK_FALSE;
+        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+        VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+        colorBlendAttachment.blendEnable = VK_FALSE;
+
+        VkPipelineColorBlendStateCreateInfo colorBlending = {};
+        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
+        colorBlending.logicOpEnable = VK_FALSE;
+        colorBlending.logicOp = VK_LOGIC_OP_COPY;
+        colorBlending.attachmentCount = 1;
+        colorBlending.pAttachments = &colorBlendAttachment;
+        colorBlending.blendConstants[0] = 0.0f;
+        colorBlending.blendConstants[1] = 0.0f;
+        colorBlending.blendConstants[2] = 0.0f;
+        colorBlending.blendConstants[3] = 0.0f;
+
+        auto stages = std::move(GetPipelineShaderStageInfos(shaders));
+
+        std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+
+        VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
+        dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
+        dynamicStateInfo.pDynamicStates = dynamicStates.data();
+        dynamicStateInfo.dynamicStateCount = (U32)dynamicStates.size();
+
+        VkPipelineDepthStencilStateCreateInfo depthStencil = {};
+        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_TRUE;
+        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
+        depthStencil.depthBoundsTestEnable = VK_FALSE;
+        depthStencil.stencilTestEnable = VK_FALSE;
+
+        VK::GraphicsPipelineCreateInfo info = {};
+        info.Stages = stages;
+        info.VertexInputState = vertexInfo;
+        info.InputAssemblyState = inputAssembly;
+        info.ViewportState = viewportState;
+        info.RasterizationState = rasterizer;
+        info.MultisampleState = multisampling;
+        info.DepthStencilState = depthStencil;
+        info.ColorBlendState = colorBlending;
+        info.DynamicState = dynamicStateInfo;
+        info.Layout = m_Layout;
+        info.RenderPass = m_RenderPass;
+    
+        m_GraphicsPipeline = VK::CreateGraphicsPipeline(m_RenderContext->GetDevice(), info);
+        
+        DestroyShaders(shaders);
+    }
+
+    void Renderer::DestroyGraphicsPipeline() {
+
+        VK::DestroyGraphicsPipeline(m_RenderContext->GetDevice(), m_GraphicsPipeline);
+    }
+
+    void Renderer::CreateSkyboxPipeline() {
+
+        VkVertexInputBindingDescription bindingDescription = {};
+        bindingDescription.binding = 0;
+        bindingDescription.stride = sizeof(SkyboxVertex);
+        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        VkVertexInputAttributeDescription attributeDescription[1] = { {} };
+
+        attributeDescription[0].binding = 0;
+        attributeDescription[0].location = 0;
+        attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
+        attributeDescription[0].offset = offsetof(SkyboxVertex, x);
+
+        VkPipelineVertexInputStateCreateInfo SkyboxVertexInfo = {};
+        SkyboxVertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        SkyboxVertexInfo.vertexBindingDescriptionCount = 1;
+        SkyboxVertexInfo.vertexAttributeDescriptionCount = sizeof(attributeDescription) / sizeof(attributeDescription[0]);
+        SkyboxVertexInfo.pVertexAttributeDescriptions = attributeDescription;
+        SkyboxVertexInfo.pVertexBindingDescriptions = &bindingDescription;
+
+        VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
+        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+        inputAssembly.primitiveRestartEnable = VK_FALSE;
+
+        VkPipelineViewportStateCreateInfo viewportState = {};
+        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
+        viewportState.viewportCount = 1;
+        viewportState.scissorCount = 1;
+
+        VkPipelineRasterizationStateCreateInfo rasterizer = {};
+        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
+        rasterizer.depthClampEnable = VK_FALSE;
+        rasterizer.rasterizerDiscardEnable = VK_FALSE;
+        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
+        rasterizer.lineWidth = 1.0f;
+        rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
         rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
         rasterizer.depthBiasEnable = VK_FALSE;
 
@@ -397,8 +512,6 @@ namespace BRQ {
         colorBlending.blendConstants[2] = 0.0f;
         colorBlending.blendConstants[3] = 0.0f;
 
-        const auto& stages = VKShader::GetVulkanShaderStageInfo();
-
         std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
 
         VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
@@ -408,15 +521,18 @@ namespace BRQ {
 
         VkPipelineDepthStencilStateCreateInfo depthStencil = {};
         depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
         depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
         depthStencil.depthBoundsTestEnable = VK_FALSE;
         depthStencil.stencilTestEnable = VK_FALSE;
+        depthStencil.depthTestEnable = VK_TRUE;
+        depthStencil.depthWriteEnable = VK_FALSE;
+
+        auto shaders = std::move(LoadShaders(m_SkyboxShaderResources));
+        auto stages = std::move(GetPipelineShaderStageInfos(shaders));
 
         VK::GraphicsPipelineCreateInfo info = {};
         info.Stages = stages;
-        info.VertexInputState = vertexInfo;
+        info.VertexInputState = SkyboxVertexInfo;
         info.InputAssemblyState = inputAssembly;
         info.ViewportState = viewportState;
         info.RasterizationState = rasterizer;
@@ -424,16 +540,17 @@ namespace BRQ {
         info.DepthStencilState = depthStencil;
         info.ColorBlendState = colorBlending;
         info.DynamicState = dynamicStateInfo;
-        info.Layout = m_Layout;
+        info.Layout = m_SkyboxLayout;
         info.RenderPass = m_RenderPass;
-    
-        m_GraphicsPipeline = VK::CreateGraphicsPipeline(m_RenderContext->GetDevice(), info);
-        DestroyShaderRescources();
+
+        m_SkyboxPipeline = VK::CreateGraphicsPipeline(m_RenderContext->GetDevice(), info);
+
+        DestroyShaders(shaders);
     }
 
-    void Renderer::DestroyGraphicsPipeline() {
+    void Renderer::DestroySkyboxPipeline() {
 
-        VK::DestroyGraphicsPipeline(m_RenderContext->GetDevice(), m_GraphicsPipeline);
+        VK::DestroyGraphicsPipeline(m_RenderContext->GetDevice(), m_SkyboxPipeline);
     }
 
     void Renderer::CreateCommands() {
@@ -512,11 +629,13 @@ namespace BRQ {
         info.Bindings = &binding;
 
         m_DescriptorSetLayout = VK::CreateDescriptorSetLayout(m_RenderContext->GetDevice(), info);
+        m_SkyboxDescriptorSetLayout = VK::CreateDescriptorSetLayout(m_RenderContext->GetDevice(), info);
     }
 
     void Renderer::DestoryDescriptorSetLayout() {
 
         VK::DestoryDescriptorSetLayout(m_RenderContext->GetDevice(), m_DescriptorSetLayout);
+        VK::DestoryDescriptorSetLayout(m_RenderContext->GetDevice(), m_SkyboxDescriptorSetLayout);
     }
 
     void Renderer::CreateDescriptorPool() {
@@ -531,6 +650,7 @@ namespace BRQ {
         info.PoolSizes = &size;
 
         m_DescriptorPool.push_back(VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info));
+        m_SkyboxDescriptorPool.push_back(VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info));
     }
 
     void Renderer::DestroyDescriptorPool() {
@@ -540,12 +660,19 @@ namespace BRQ {
             VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), pool);
         }
 
+        for (auto& pool : m_SkyboxDescriptorPool) {
+
+            VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), pool);
+        }
+
         m_DescriptorPool.clear();
+        m_SkyboxDescriptorPool.clear();
     }
 
     void Renderer::CreateDescriptorSets() {
 
         std::vector<VkDescriptorSetLayout> layouts(m_RenderContext->GetImageCount(), m_DescriptorSetLayout);
+        std::vector<VkDescriptorSetLayout> skyboxLayouts(m_RenderContext->GetImageCount(), m_SkyboxDescriptorSetLayout);
 
         VK::DescriptorSetAllocateInfo info = {};
         info.DescriptorPool = m_DescriptorPool[0];
@@ -554,17 +681,43 @@ namespace BRQ {
 
         m_DescriptorSet = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
 
-        for (size_t i = 0; i < m_DescriptorSet.size(); i++) {
+        info.DescriptorPool = m_SkyboxDescriptorPool[0];
+        info.DescriptorSetCount = m_RenderContext->GetImageCount();
+        info.SetLayouts = skyboxLayouts.data();
 
+        m_SkyboxDescriptorSet = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
+
+        for (size_t i = 0; i < m_DescriptorSet.size(); i++) {
+        
             VkDescriptorImageInfo imageInfo = {};
             imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
             imageInfo.imageView = m_Texture2D->GetImageView().ImageView;
-            imageInfo.sampler = m_TextureSampler2D;
+            imageInfo.sampler = m_Texture2D->GetSampler();
+        
+            VkWriteDescriptorSet descriptorWrites = {};
+        
+            descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+            descriptorWrites.dstSet = m_DescriptorSet[i];
+            descriptorWrites.dstBinding = 0;
+            descriptorWrites.dstArrayElement = 0;
+            descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+            descriptorWrites.descriptorCount = 1;
+            descriptorWrites.pImageInfo = &imageInfo;
+        
+            vkUpdateDescriptorSets(m_RenderContext->GetDevice(), 1, &descriptorWrites, 0, nullptr);
+        }
+
+        for (size_t i = 0; i < m_SkyboxDescriptorSet.size(); i++) {
+
+            VkDescriptorImageInfo imageInfo = {};
+            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+            imageInfo.imageView = m_TextureCube->GetImageView().ImageView;
+            imageInfo.sampler = m_TextureCube->GetSampler();
 
             VkWriteDescriptorSet descriptorWrites = {};
 
             descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.dstSet = m_DescriptorSet[i];
+            descriptorWrites.dstSet = m_SkyboxDescriptorSet[i];
             descriptorWrites.dstBinding = 0;
             descriptorWrites.dstArrayElement = 0;
             descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
@@ -575,39 +728,66 @@ namespace BRQ {
         }
     }
 
-    void Renderer::CreateTextureSampler2D() {
-
-        VkPhysicalDeviceProperties properties = VK::GetPhysicalDeviceProperties(m_RenderContext->GetPhysicalDevice());
-
-        VK::SamplerCreateInfo info = {};
-        info.MagFilter = VK_FILTER_LINEAR;
-        info.MinFilter = VK_FILTER_LINEAR;
-        info.AddressModeU = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        info.AddressModeV = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        info.AddressModeW = VK_SAMPLER_ADDRESS_MODE_REPEAT;
-        info.AnisotropyEnable = VK_TRUE;
-        info.MaxAnisotropy = properties.limits.maxSamplerAnisotropy;
-        info.BorderColor = VK_BORDER_COLOR_INT_OPAQUE_BLACK;
-        info.UnnormalizedCoordinates = VK_FALSE;
-        info.CompareEnable = VK_FALSE;
-        info.CompareOp = VK_COMPARE_OP_ALWAYS;
-        info.MipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
-
-        m_TextureSampler2D = VK::CreateSampler(m_RenderContext->GetDevice(), info);
-    }
-
-    void Renderer::DestroyTextureSampler2D() {
-
-        VK::DestroySampler(m_RenderContext->GetDevice(), m_TextureSampler2D);
-    }
-
     void Renderer::CreateTexture() {
 
-        m_Texture2D = new Texture2D("Models/Lion.jpg");
+        m_Texture2D = new Texture2D("Resources/Textures/Lion.jpg");
     }
 
     void Renderer::DestroyTexture() {
 
         delete m_Texture2D;
+    }
+
+    void Renderer::CreateSkybox() {
+
+        std::vector<std::string_view> filenames = {
+            "Resources/Textures/Skybox/posz.jpg",
+            "Resources/Textures/Skybox/negz.jpg",
+            "Resources/Textures/Skybox/negy.jpg",
+            "Resources/Textures/Skybox/posy.jpg",
+            "Resources/Textures/Skybox/posx.jpg",
+            "Resources/Textures/Skybox/negx.jpg",
+        };
+
+        m_TextureCube = new TextureCube(filenames);
+    }
+
+    void Renderer::DestroySkybox() {
+
+        delete m_TextureCube;
+    }
+
+    std::vector<VKShader> Renderer::LoadShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
+
+        std::vector<VKShader> shaders(resources.size());
+
+        for (U64 i = 0; i < shaders.size(); i++) {
+
+            shaders[i].Create(m_RenderContext->GetDevice(), resources[i].first, resources[i].second);
+        }
+
+        return std::move(shaders);
+    }
+
+    void Renderer::DestroyShaders(std::vector<VKShader>& shaders) {
+
+        for (U64 i = 0; i < shaders.size(); i++) {
+
+            shaders[i].Destroy(m_RenderContext->GetDevice());
+        }
+
+        shaders.clear();
+    }
+
+    std::vector<VkPipelineShaderStageCreateInfo> Renderer::GetPipelineShaderStageInfos(const std::vector<VKShader>& shaders) {
+
+        std::vector<VkPipelineShaderStageCreateInfo> result(shaders.size());
+
+        for (U64 i = 0; i < shaders.size(); i++) {
+
+            result[i] = shaders[i].GetPipelineShaderStageInfo();
+        }
+
+        return std::move(result);
     }
 }

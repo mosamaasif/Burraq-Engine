@@ -9,7 +9,8 @@ namespace BRQ {
 		m_ViewMatrix = glm::mat4(1.0f);
 
 		m_Position = { 0.0f, 0.0f, 2.0f };
-		m_Front = { 0.00414f, 0.99985f, 0.01695f };
+		//m_Front = { 0.00414f, 0.99985f, 0.01695f };
+		m_Front = { 0.0f, 0.0f, 0.0f };
 		m_WorldUp = { 0.0f, 1.0f, 0.0f };
 
 		m_WindowCenterX = (F32)width / 2.0f;

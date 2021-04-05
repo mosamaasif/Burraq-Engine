@@ -28,3 +28,5 @@
 
 #include "Utilities/Types.h"
 #include "Utilities/FileSystem.h"
+
+#include "Math/Math.h"
