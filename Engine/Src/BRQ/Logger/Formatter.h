@@ -2,8 +2,9 @@
 
 #include <memory>
 #include "FormatterUtility.h"
+#include "Utilities/Types.h"
 
-#define MAX_FORMAT_BUFFER           1024
+#define MAX_FORMAT_BUFFER           4096
 
 namespace BRQ {
 
@@ -49,10 +50,10 @@ namespace BRQ {
 
             size_t length = strlen(format);
 
-            U8 buffer[64];
-            memset(buffer, 0, 64);
+            U8 buffer[512];
+            memset(buffer, 0, 512);
 
-            WriteToBuffer(buffer, 64, first);
+            WriteToBuffer(buffer, 512, first);
 
             size_t argumentLength = strlen((const char*)buffer);
 

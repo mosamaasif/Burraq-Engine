@@ -1,6 +1,9 @@
 #pragma once
 
 #include <BRQ.h>
+#include "Events/Event.h"
+
+struct GLFWwindow;
 
 namespace BRQ {
 
@@ -14,29 +17,37 @@ namespace BRQ {
             : Title(title), Width(width), Height(height) { }
     };
 
-    class Window {
+    class Window  {
 
-	public:
-		typedef void* WindowHandle;
+    public:
+        typedef void* WindowHandle;
+        using EventCallbackFunction = std::function<void(Event&)>;
 
-	protected:
-		bool m_Open;
+    private:
+        WindowProperties      m_Properties;
+        WindowHandle          m_WindowHandle;
+        GLFWwindow*           m_Window;
+        EventCallbackFunction m_EventCallback;
+        bool                  m_Open;
 
-	protected:
-		Window();
+    public:
+        Window() = delete;
+        Window(const WindowProperties& properties);
+        ~Window();
 
-	public:
-		virtual ~Window() = default;
+        void OnUpdate();
 
-		virtual void OnUpdate() = 0;
+        U32 GetWidth() const { return m_Properties.Width; }
+        U32 GetHeight() const { return m_Properties.Height; }
 
-		virtual U32 GetWidth() const = 0;
-		virtual U32 GetHeight() const = 0;
+        const std::string& GetWindowTitle() const { return m_Properties.Title; }
 
-		virtual WindowHandle GetNativeWindowHandle() const = 0;
+        WindowHandle GetNativeWindowHandle() const { return m_WindowHandle; };
 
-		bool IsOpen() const { return m_Open; }
+        void SetEventCallbackFunction(const EventCallbackFunction& function) { m_EventCallback = function; }
+        bool IsOpen() const { return m_Open; };
 
-		static Window* Create(const WindowProperties& properties = WindowProperties());
+    private:
+        bool Init();
     };
 }

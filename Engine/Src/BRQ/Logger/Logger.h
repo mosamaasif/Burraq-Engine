@@ -6,7 +6,7 @@
 #include "FileSink.h"
 #include "Formatter.h"
 
-#define MAX_LOGGER_BUFFER   512
+#define MAX_LOGGER_BUFFER   4096
 
 namespace BRQ {
 
@@ -36,8 +36,7 @@ namespace BRQ {
         const char* m_LoggerName;
         LogLevel    m_LogLevel;
         bool        m_FileLogging;
-
-        U8*       m_Buffer;
+        U8*         m_Buffer;
 
     public:
         Logger() = delete;

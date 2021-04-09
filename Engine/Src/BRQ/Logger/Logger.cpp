@@ -11,7 +11,7 @@ namespace BRQ {
 
     Logger::Logger(const LoggerProperties& properties)
         : m_LoggerName(properties.LoggerName), m_LogLevel(LogLevel::Warn),
-          m_FileLogging(properties.FileLogging), m_Buffer(nullptr)  {
+        m_FileLogging(properties.FileLogging), m_Buffer(nullptr), m_FileSink({}) {
 
         m_Buffer = new U8[MAX_LOGGER_BUFFER];
 
@@ -63,7 +63,7 @@ namespace BRQ {
         memset(buffer, 0, size);
         GetTime("{}:{}:{}", buffer, size);
 
-        m_Formatter.Format("[{}] {}: ", (const char*)buffer, m_LoggerName);
+        m_Formatter.Format("[{}] [{}]: ", (const char*)buffer, m_LoggerName);
 
         m_Formatter.GetBuffer(buffer, size);
     }

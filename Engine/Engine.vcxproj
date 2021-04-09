@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
+﻿<?xml version="1.0" encoding="utf-8"?>
 <Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|x64">
@@ -18,13 +18,13 @@
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <CharacterSet>Unicode</CharacterSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
-    <ConfigurationType>Application</ConfigurationType>
+    <ConfigurationType>StaticLibrary</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
     <PlatformToolset>v142</PlatformToolset>
     <WholeProgramOptimization>true</WholeProgramOptimization>
@@ -44,15 +44,16 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <LinkIncremental>true</LinkIncremental>
-    <OutDir>$(SolutionDir)Bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)Bin\Intermediate\$(Platform)\$(Configuration)\</IntDir>
+    <OutDir>$(SolutionDir)Bin\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Bin\$(ProjectName)\Intermediates\$(Platform)\$(Configuration)\</IntDir>
     <CodeAnalysisRuleSet>MixedRecommendedRules.ruleset</CodeAnalysisRuleSet>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <LinkIncremental>false</LinkIncremental>
-    <OutDir>$(SolutionDir)Bin\$(Platform)\$(Configuration)\</OutDir>
-    <IntDir>$(SolutionDir)Bin\Intermediate\$(Platform)\$(Configuration)\</IntDir>
-    <CodeAnalysisRuleSet>AllRules.ruleset</CodeAnalysisRuleSet>
+    <OutDir>$(SolutionDir)Bin\$(ProjectName)\$(Platform)\$(Configuration)\</OutDir>
+    <IntDir>$(SolutionDir)Bin\$(ProjectName)\Intermediates\$(Platform)\$(Configuration)\</IntDir>
+    <CodeAnalysisRuleSet>NativeRecommendedRules.ruleset</CodeAnalysisRuleSet>
+    <RunCodeAnalysis>false</RunCodeAnalysis>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <ClCompile>
@@ -61,16 +62,20 @@
       <PreprocessorDefinitions>BRQ_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\SPIR-V-Reflect\include;$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
+      <DisableSpecificWarnings>26812;26495;26451;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\meshoptimizer\Lib\;$(VULKAN_SDK)\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>msvcrtd.lib%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
+      <IgnoreAllDefaultLibraries>false</IgnoreAllDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -82,48 +87,112 @@
       <PreprocessorDefinitions>BRQ_RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\SPIR-V-Reflect\include;$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <FavorSizeOrSpeed>Speed</FavorSizeOrSpeed>
+      <OmitFramePointers>false</OmitFramePointers>
+      <LanguageStandard_C>stdc17</LanguageStandard_C>
+      <DisableSpecificWarnings>26812;26495;26451;%(DisableSpecificWarnings)</DisableSpecificWarnings>
+      <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
+      <FloatingPointModel>Fast</FloatingPointModel>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>$(ProjectDir)ThirdParty\meshoptimizer\Lib\;$(VULKAN_SDK)\Lib\;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;meshoptimizer.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <IgnoreSpecificDefaultLibraries>msvcrt.lib;%(IgnoreSpecificDefaultLibraries)</IgnoreSpecificDefaultLibraries>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="Src\BRQ\Application\EntryPoint.cpp" />
-    <ClCompile Include="Src\BRQ\Application\Window.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Application.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Input.cpp" />
+    <ClCompile Include="Src\BRQ\Camera\Camera.cpp" />
+    <ClCompile Include="Src\BRQ\Camera\CameraController.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\BufferLayout.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\GraphicsPipeline.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Mesh.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Skybox.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\Texture2D.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\TextureCube.cpp" />
     <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\RenderContext.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VulkanHelpers.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VulkanDevice.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VulkanSwapchain.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Window.cpp" />
     <ClCompile Include="Src\BRQ\BRQ.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="Src\BRQ\Logger\Log.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\FileSystem.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\Timer.cpp" />
+    <ClCompile Include="Src\BRQ\Utilities\VulkanMemoryAllocator.cpp" />
+    <ClCompile Include="ThirdParty\SPIR-V-Reflect\spirv_reflect.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
+    <ClInclude Include="Src\BRQ\Camera\Camera.h" />
+    <ClInclude Include="Src\BRQ\Camera\CameraController.h" />
+    <ClInclude Include="Src\BRQ\Graphics\BufferLayout.h" />
+    <ClInclude Include="Src\BRQ\Graphics\GraphicsPipeline.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Skybox.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Texture2D.h" />
+    <ClInclude Include="Src\BRQ\Graphics\TextureCube.h" />
+    <ClInclude Include="Src\BRQ\Math\Math.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanDevice.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanSwapchain.h" />
+    <ClInclude Include="Src\BRQ\Utilities\Timer.h" />
+    <ClInclude Include="Src\Engine.h" />
+    <ClInclude Include="Src\BRQ\Application\Application.h" />
+    <ClInclude Include="Src\BRQ\Application\Input.h" />
+    <ClInclude Include="Src\BRQ\Application\Keys.h" />
     <ClInclude Include="Src\BRQ\Application\Window.h" />
     <ClInclude Include="Src\BRQ\Core\Base.h" />
+    <ClInclude Include="Src\BRQ\Events\WindowEvents.h" />
+    <ClInclude Include="Src\BRQ\Events\Event.h" />
+    <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
+    <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Mesh.h" />
+    <ClInclude Include="Src\BRQ\Graphics\Renderer.h" />
     <ClInclude Include="Src\BRQ\Logger\ConsoleSink.h" />
     <ClInclude Include="Src\BRQ\Logger\FileSink.h" />
     <ClInclude Include="Src\BRQ\Logger\Formatter.h" />
     <ClInclude Include="Src\BRQ\Logger\FormatterUtility.h" />
     <ClInclude Include="Src\BRQ\Logger\Logger.h" />
     <ClInclude Include="Src\BRQ\Platform\Platform.h" />
-    <ClInclude Include="Src\BRQ\Platform\Windows\WindowsWindow.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\RenderContext.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanCommands.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanCommon.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanHelpers.h" />
     <ClInclude Include="Src\BRQ\BRQ.h" />
     <ClInclude Include="Src\BRQ\Logger\Log.h" />
+    <ClInclude Include="Src\BRQ\Utilities\FileSystem.h" />
     <ClInclude Include="Src\BRQ\Utilities\Types.h" />
+    <ClInclude Include="Src\BRQ\Utilities\VulkanMemoryAllocator.h" />
+    <ClInclude Include="ThirdParty\meshoptimizer\include\meshoptimizer.h" />
+    <ClInclude Include="ThirdParty\TinyObjLoader\include\tiny_obj_loader.h" />
+    <ClInclude Include="ThirdParty\VulkanMemoryAllocator\include\vk_mem_alloc.h" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="Src\Shaders\shader.frag" />
+    <None Include="Src\Shaders\shader.vert" />
+    <None Include="Src\Shaders\ShaderCompilerScript.bat" />
+  </ItemGroup>
+  <ItemGroup>
+    <Library Include="ThirdParty\meshoptimizer\lib\meshoptimizer.lib" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
