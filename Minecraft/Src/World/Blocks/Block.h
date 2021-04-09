@@ -18,7 +18,7 @@ namespace MC {
 
     struct Block {
         
-        BlockType   Type = BlockType::Air;
-        bool        IsRendered = false;
+        BlockType Type = BlockType::Air;
+        bool      IsRendered = false;
     };
 }

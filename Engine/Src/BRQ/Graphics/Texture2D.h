@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platform/Vulkan/VKInitializers.h"
+#include "Platform/Vulkan/VulkanHelpers.h"
 
 namespace BRQ {
 

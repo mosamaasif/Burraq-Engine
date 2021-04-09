@@ -20,8 +20,8 @@ namespace BRQ { namespace Utilities {
         };
 
     private:
-        static FileSystem*      s_Instance;
-        std::string             m_RootDirectory;
+        static FileSystem* s_Instance;
+        std::string        m_RootDirectory;
 
     protected:
         FileSystem() = default;

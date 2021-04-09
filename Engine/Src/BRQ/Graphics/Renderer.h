@@ -4,10 +4,25 @@
 #include "Camera/Camera.h"
 #include "Texture2D.h"
 #include "TextureCube.h"
-#include "Platform/Vulkan/VKShader.h"
 #include "Platform/Vulkan/RenderContext.h"
+#include "GraphicsPipeline.h"
 
 namespace BRQ {
+
+    struct PerFrame {
+
+        VkCommandPool                CommandPool;
+        VkCommandBuffer              CommandBuffer;
+
+        VkSemaphore                  ImageAvailableSemaphore;
+        VkSemaphore                  RenderFinishedSemaphore;
+        VkFence                      CommandBufferExecutedFence;
+
+        VkDescriptorPool             DescriptorPool;
+        VkDescriptorPool             SkyboxDescriptorPool;
+        std::vector<VkDescriptorSet> DescriptorSets;
+        std::vector<VkDescriptorSet> SkyboxDescriptorSets;
+    };
 
     class Renderer {
 
@@ -20,30 +35,11 @@ namespace BRQ {
         Texture2D*                                                  m_Texture2D;
         TextureCube*                                                m_TextureCube;
 
-        VkRenderPass												m_RenderPass;
-        VkPipelineLayout											m_Layout;
-        VkPipelineLayout                                            m_SkyboxLayout;
-        VkPipeline      											m_GraphicsPipeline;
-        VkPipeline                                                  m_SkyboxPipeline;
+        GraphicsPipeline                                            m_Pipeline;
+        GraphicsPipeline                                            m_Skybox;
 
-        VkDescriptorSetLayout                                       m_DescriptorSetLayout;
-        VkDescriptorSetLayout                                       m_SkyboxDescriptorSetLayout;
-
+        PerFrame                                                    m_PerFrameData[FRAME_LAG];
         std::vector<VkFramebuffer>                                  m_Framebuffers;
-        std::vector<VkDescriptorPool>                               m_DescriptorPool;
-        std::vector<VkDescriptorPool>                               m_SkyboxDescriptorPool;
-
-        std::vector<VkDescriptorSet>                                m_DescriptorSet;
-        std::vector<VkDescriptorSet>                                m_SkyboxDescriptorSet;
-
-        std::vector<VkCommandPool>                                  m_CommandPools;
-        std::vector<VkCommandBuffer>								m_CommandBuffers;
-        std::vector<VkSemaphore>									m_ImageAvailableSemaphores;
-        std::vector<VkSemaphore>									m_RenderFinishedSemaphores;
-        std::vector<VkFence>                                        m_CommandBufferExecutedFences;
-
-        std::vector<std::pair<std::string, VKShader::ShaderType>>   m_ShaderResources;
-        std::vector<std::pair<std::string, VKShader::ShaderType>>   m_SkyboxShaderResources;
 
     protected:
         Renderer();
@@ -56,9 +52,6 @@ namespace BRQ {
         static void Shutdown();
 
         static Renderer* GetInstance() { return s_Renderer;  }
-
-        void SubmitShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources);
-        void SubmitSkyboxShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources);
 
         void BeginScene(const Camera& camera);
         void EndScene();
@@ -73,14 +66,8 @@ namespace BRQ {
 
         void RecreateSwapchain();
 
-        void CreateRenderPass();
-        void DestroyRenderPass();
-
         void CreateFramebuffers();
         void DestroyFramebuffers();
-
-        void CreatePipelineLayouts();
-        void DestroyPipelineLayouts();
 
         void CreateGraphicsPipeline();
         void DestroyGraphicsPipeline();
@@ -94,9 +81,6 @@ namespace BRQ {
         void CreateSyncronizationPrimitives();
         void DestroySyncronizationPrimitives();
 
-        void CreateDescriptorSetLayout();
-        void DestoryDescriptorSetLayout();
-
         void CreateDescriptorPool();
         void DestroyDescriptorPool();
 
@@ -108,10 +92,5 @@ namespace BRQ {
 
         void CreateSkybox();
         void DestroySkybox();
-
-        std::vector<VKShader> LoadShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources);
-        void DestroyShaders(std::vector<VKShader>& shaders);
-
-        std::vector<VkPipelineShaderStageCreateInfo> GetPipelineShaderStageInfos(const std::vector<VKShader>& shaders);
     };
 }

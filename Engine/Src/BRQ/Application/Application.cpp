@@ -2,6 +2,8 @@
 
 #include "Application.h"
 
+#include "Graphics/GraphicsPipeline.h"
+
 namespace BRQ {
 
     Application::Application() {
@@ -17,7 +19,7 @@ namespace BRQ {
         Log::Init();
         Utilities::FileSystem::Init();
 
-        m_Window = Window::Create(m_WindowProperties = props);
+        m_Window = new Window(m_WindowProperties = props);
         m_Window->SetEventCallbackFunction(BRQ_BIND_EVENT_FN(OnEvent));
 
         Renderer::Init(m_Window);
@@ -28,11 +30,6 @@ namespace BRQ {
         m_CameraController = CameraController(m_Window->GetWidth(), m_Window->GetHeight(), 80.0f);
         m_Minimized = false;
 
-        m_Renderer->SubmitShaders({ {"Resources/Shaders/shader.vert.spv", VKShader::ShaderType::Vertex},
-                                    {"Resources/Shaders/shader.frag.spv", VKShader::ShaderType::Fragment} });
-
-        m_Renderer->SubmitSkyboxShaders({ {"Resources/Shaders/skyboxShader.vert.spv", VKShader::ShaderType::Vertex},
-                                          {"Resources/Shaders/skyboxShader.frag.spv", VKShader::ShaderType::Fragment} });
     }
 
     Application::~Application() {

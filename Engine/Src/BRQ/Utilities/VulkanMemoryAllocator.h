@@ -6,9 +6,9 @@ namespace BRQ {
 
     struct VulkanMemoryAllocatorCreateInfo {
 
-        VkInstance          Instance = VK_NULL_HANDLE;
-        VkPhysicalDevice    PhysicalDevice = VK_NULL_HANDLE;
-        VkDevice            Device = VK_NULL_HANDLE;
+        VkInstance       Instance = VK_NULL_HANDLE;
+        VkPhysicalDevice PhysicalDevice = VK_NULL_HANDLE;
+        VkDevice         Device = VK_NULL_HANDLE;
     };
 
     class VulkanMemoryAllocator {
@@ -16,20 +16,20 @@ namespace BRQ {
     public:
         struct BufferInfo {
 
-            VkBuffer        Buffer = VK_NULL_HANDLE;
-            VmaAllocation   Allocation = nullptr;
+            VkBuffer      Buffer = VK_NULL_HANDLE;
+            VmaAllocation Allocation = nullptr;
         };
 
         struct ImageInfo {
 
-            VkImage         Image = VK_NULL_HANDLE;
-            VmaAllocation   Allocation = nullptr;
+            VkImage       Image = VK_NULL_HANDLE;
+            VmaAllocation Allocation = nullptr;
         };
 
     private:
-        static VulkanMemoryAllocator*   s_Instance;
+        static VulkanMemoryAllocator* s_Instance;
 
-        VmaAllocator                    m_Allocator;
+        VmaAllocator                  m_Allocator;
  
     protected:
         VulkanMemoryAllocator();

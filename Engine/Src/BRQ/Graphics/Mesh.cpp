@@ -80,8 +80,8 @@ namespace BRQ {
     void Mesh::LoadMesh(const MeshData& meshData) {
 
         VkDevice device = RenderContext::GetInstance()->GetDevice();
-        U32 queueIndex = RenderContext::GetInstance()->GetGraphicsAndPresentationQueueIndex();
-        VkQueue queue = RenderContext::GetInstance()->GetGraphicsAndPresentationQueue();
+        U32 queueIndex = RenderContext::GetInstance()->GetGraphicsQueueIndex();
+        VkQueue queue = RenderContext::GetInstance()->GetGraphicsQueue();
 
         VertexCount = meshData.Verticies.size();
         IndexCount = meshData.Indicies.size();

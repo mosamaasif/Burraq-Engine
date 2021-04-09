@@ -1,2 +1,0 @@
-1) Resizing Window to fullscreen causes Infinite Y axis movement
-2) GLFW static linking errors

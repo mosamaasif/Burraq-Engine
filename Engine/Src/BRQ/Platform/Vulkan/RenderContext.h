@@ -1,8 +1,8 @@
 #pragma once
 
-#include "VKInitializers.h"
-
-#define FRAME_LAG   3
+#include "VulkanHelpers.h"
+#include "VulkanDevice.h"
+#include "VulkanSwapchain.h"
 
 namespace BRQ {
 
@@ -11,31 +11,18 @@ namespace BRQ {
     class RenderContext {
 
     private:
-        static RenderContext*                       s_RenderContext;
+        static RenderContext* s_RenderContext;
 
-        const Window*                               m_Window;
+        VulkanDevice          m_Device;
+        VulkanSwapchain       m_Swapchain;
+        
+        U32                   m_CurrentIndex;
+        U32                   m_AcquiredImageIndex;
 
-        VkInstance                                  m_Instance;
-        VkSurfaceKHR                                m_Surface;
-        VkPhysicalDevice                            m_PhysicalDevice;
-        VkDevice                                    m_Device;
-        VK::SwapchainResult                         m_SwapchainResult;
-        VkExtent2D                                  m_SwapchainExtent2D;
-        VkSurfaceFormatKHR                          m_SurfaceFormat;
-        VkPresentModeKHR                            m_PresentMode;
-        VkCompositeAlphaFlagBitsKHR                 m_SurfaceComposite;
-        U32                                         m_ImageCount;
-        U32                                         m_CurrentIndex;
-        U32                                         m_AcquiredImageIndex;
-        VK::Image                                   m_DepthImage;
-        VK::ImageView                               m_DepthImageView;
-        VkQueue                                     m_GraphicsAndPresentationQueue;
-        VkQueue                                     m_ComputeQueue;
-        VkQueue                                     m_TransferQueue;
-        U32                                         m_GraphicsAndPresentationQueueIndex;
-        U32                                         m_ComputeQueueIndex;
-        U32                                         m_TransferQueueIndex;
-        std::vector<std::pair<VK::QueueType, F32>>  m_RequestedQueues;
+        VK::Image             m_DepthImage;
+        VK::ImageView         m_DepthImageView;
+
+        VkRenderPass          m_RenderPass;
 
     protected:
         RenderContext();
@@ -46,55 +33,50 @@ namespace BRQ {
 
         static RenderContext* GetInstance() { return s_RenderContext; }
 
-        static void Init(const Window* window, const std::vector<std::pair<VK::QueueType, F32>>& requestedQueues);
+        static void Init(const Window* window);
         static void Destroy();
 
-        const VkInstance& GetVulkanInstance() const { return m_Instance; }
-        const VkSurfaceKHR& GetSurface() const { return m_Surface; }
-        const VkPhysicalDevice& GetPhysicalDevice() const { return m_PhysicalDevice; }
-        const VkDevice& GetDevice() const { return m_Device; }
-        const VkSwapchainKHR& GetSwapchain() const { return m_SwapchainResult.Swapchain; }
-        const VkQueue& GetGraphicsAndPresentationQueue() const { return m_GraphicsAndPresentationQueue; }
-        const VkQueue& GetComputeQueue() const { return m_ComputeQueue; }
-        const VkQueue& GetTransferQueue() const { return m_TransferQueue; }
+        const VkInstance& GetVulkanInstance() const { return m_Device.GetVulkanInstance(); }
+        const VkSurfaceKHR& GetSurface() const { return m_Device.GetSurface(); }
+        const VkPhysicalDevice& GetPhysicalDevice() const { return m_Device.GetPhysicalDevice(); }
+        const VkDevice& GetDevice() const { return m_Device.GetDevice(); }
+        const VkSwapchainKHR& GetSwapchain() const { return m_Swapchain.GetSwapchain(); }
 
-        U32 GetGraphicsAndPresentationQueueIndex() const { return m_GraphicsAndPresentationQueueIndex; }
-        U32 GetComputeQueueIndex() const { return m_ComputeQueueIndex; }
-        U32 GetTransferQueueIndex() const { return m_TransferQueueIndex; }
+        const VkQueue& GetGraphicsQueue() const { return m_Device.GetGraphicsQueue(); }
+        const VkQueue& GetPresentationQueue() const { return m_Device.GetPresentationQueue(); }
+        const VkQueue& GetComputeQueue() const { return m_Device.GetComputeQueue(); }
+        const VkQueue& GetTransferQueue() const { return m_Device.GetTransferQueue(); }
 
-        const VkExtent2D& GetSwapchainExtent2D() const { return m_SwapchainExtent2D; }
+        U32 GetGraphicsQueueIndex() const { return m_Device.GetGraphicsQueueIndex(); }
+        U32 GetPresentationQueueIndex() const { return m_Device.GetPresentationQueueIndex(); }
+        U32 GetComputeQueueIndex() const { return m_Device.GetComputeQueueIndex(); }
+        U32 GetTransferQueueIndex() const { return m_Device.GetTransferQueueIndex(); }
 
-        const VkSurfaceFormatKHR& GetSurfaceFormat() const { return m_SurfaceFormat; }
-        const VkFormat& GetSwapchainImageFormat() const { return m_SurfaceFormat.format; }
+        const VkExtent2D& GetSwapchainExtent2D() const { return m_Swapchain.GetSwapchainExtent2D(); }
 
-        const std::vector<VK::ImageView>& GetImageViews() const { return m_SwapchainResult.SwapchainImageViews; }
+        const VkSurfaceFormatKHR& GetSurfaceFormat() const { return m_Device.GetSurfaceFormat(); }
+        const VkFormat& GetSwapchainImageFormat() const { return m_Device.GetSurfaceFormat().format; }
+
+        const std::vector<VK::ImageView>& GetImageViews() const { return m_Swapchain.GetSwapchainImageViews(); }
         VK::ImageView GetDepthView() const { return m_DepthImageView; }
 
         VkResult AcquireImageIndex(const VkSemaphore& imageAvailableSemaphore);
         U32 GetAcquiredImageIndex() const { return m_AcquiredImageIndex; }
         U32 GetCurrentIndex() const { return m_CurrentIndex; }
-        U32 GetImageCount() const { return m_ImageCount; }
+        U32 GetImageCount() const { return m_Device.GetSurfaceImageCount(); }
+
+        const VkRenderPass& GetRenderPass() const { return m_RenderPass; }
 
         void UpdateSwapchain();
 
         VkResult Present(const VkSemaphore& signalSemaphore);
 
     private:
-        void InitInternal(const Window* window, const std::vector<std::pair<VK::QueueType, F32>>& requestedQueues);
+        void InitInternal(const Window* window);
         void DestroyInternal();
 
-        void CreateInstance();
-        void DestroyInstance();
-
-        void CreateSurface();
-        void DestroySurface();
-
-        void SelectPhysicalDevice();
-
-        void CreateDevice();
+        void CreateDevice(const Window* window);
         void DestroyDevice();
-
-        void GetRequestedQueues();
 
         void CreateSwapchain();
         void DestroySwapchain();
@@ -102,6 +84,8 @@ namespace BRQ {
         void CreateDepthResources();
         void DestroyDepthResources();
         void UpdateDepthResources();
-    };
 
+        void CreateRenderPass();
+        void DestroyRenderPass();
+    };
 }

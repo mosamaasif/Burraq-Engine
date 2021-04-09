@@ -1,6 +1,6 @@
 #pragma once
 
-#include "Platform/Vulkan/VKInitializers.h"
+#include "Platform/Vulkan/VulkanHelpers.h"
 
 
 namespace BRQ {
@@ -25,6 +25,5 @@ namespace BRQ {
     private:
         void CreateSampler();
         void DestroySampler();
-
     };
 }

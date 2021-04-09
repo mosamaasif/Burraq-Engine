@@ -23,15 +23,15 @@ namespace BRQ {
         };
 
     private:
-        static Input*         s_Instance;
+        static Input*      s_Instance;
 
-        static GLFWwindow*    s_Window;
+        static GLFWwindow* s_Window;
 
-        static bool           s_Key[MAX_KEYS];
-        static bool           s_Mouse[MAX_BUTTONS];
+        static bool        s_Key[MAX_KEYS];
+        static bool        s_Mouse[MAX_BUTTONS];
 
-        static F32            s_MouseX;
-        static F32            s_MouseY;
+        static F32         s_MouseX;
+        static F32         s_MouseY;
 
     protected:
         Input() = default;

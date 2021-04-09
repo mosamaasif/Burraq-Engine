@@ -1,6 +1,6 @@
 #include <BRQ.h>
 
-#include "VKInitializers.h"
+#include "VulkanHelpers.h"
 
 namespace BRQ { namespace VK {
 
@@ -146,16 +146,16 @@ namespace BRQ { namespace VK {
         VmaAllocationCreateInfo allocInfo = {};
         allocInfo.usage = info.MemoryUsage;
 
-        image.ImageAllocation = VulkanMemoryAllocator::GetInstance()->CreateImage(imageInfo, allocInfo);
+        image = VulkanMemoryAllocator::GetInstance()->CreateImage(imageInfo, allocInfo);
 
         return image;
     }
 
     void DestroyImage(Image& image) {
 
-        VulkanMemoryAllocator::GetInstance()->DestroyImage(image.ImageAllocation);
-        image.ImageAllocation.Allocation = nullptr;
-        image.ImageAllocation.Image = VK_NULL_HANDLE;
+        VulkanMemoryAllocator::GetInstance()->DestroyImage(image);
+        image.Allocation = nullptr;
+        image.Image = VK_NULL_HANDLE;
     }
 
     VkSurfaceCapabilitiesKHR GetSurfaceCapabilities(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface) {
@@ -197,47 +197,50 @@ namespace BRQ { namespace VK {
     U32 GetQueueFamilyIndex(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, QueueType type) {
 
         U32 queueCount = 0;
-        U32 index = VK_QUEUE_FAMILY_IGNORED;
 
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, nullptr);
 
         std::vector<VkQueueFamilyProperties> queues(queueCount);
         vkGetPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueCount, &queues[0]);
 
-        for (U32 i = 0; i < queueCount; i++) {
+        // This is a VERY NAIVE way to find unique queues
+        // Nvidia supports Async Compute and Async Transfer queue from Pascal Arch
+        // It turns out these cards have only 3 Queue Families
+        // Queue Family = 0; supports Graphics, Compute and Transfer
+        // Queue Family = 1; supports Transfer
+        // Queue Family = 2; supports Compute and Transfer
 
-            if (type == QueueType::Graphics) {
+        BRQ_ASSERT(queueCount >= 3);
 
-                if (queues[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
+        if (type == QueueType::Graphics) {
 
-                    VkBool32 presentSupport = false;
-                    vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, i, surface, &presentSupport);
+            if (queues[0].queueFlags & VK_QUEUE_GRAPHICS_BIT) {
 
-                    if (presentSupport) {
+                VkBool32 presentSupport = false;
+                vkGetPhysicalDeviceSurfaceSupportKHR(physicalDevice, 0, surface, &presentSupport);
 
-                        index = i;
-                        break;
-                    }
-                }
-            }
-            else if (type == QueueType::Compute) {
+                if (presentSupport) {
 
-                if (queues[i].queueFlags & VK_QUEUE_COMPUTE_BIT) {
-
-                    index = i;
-                    break;
-                }
-            }
-            else if (type == QueueType::Tranfer) {
-
-                if (queues[i].queueFlags & VK_QUEUE_TRANSFER_BIT) {
-
-                    index = i;
-                    break;
+                    return 0;
                 }
             }
         }
-        return index;
+        else if (type == QueueType::AsyncTransfer) {
+
+            if (queues[1].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+
+                return 1;
+                
+            }
+        }
+        else if (type == QueueType::AsyncCompute) {
+
+            if (queues[2].queueFlags & VK_QUEUE_TRANSFER_BIT) {
+
+                return 2;
+            }
+        }
+        return VK_QUEUE_FAMILY_IGNORED;
     }
 
     VkPhysicalDeviceProperties GetPhysicalDeviceProperties(const VkPhysicalDevice& physicalDevice) {
@@ -317,16 +320,11 @@ namespace BRQ { namespace VK {
         std::vector<U32> queueIndices;
         std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
 
-        for (U64 i = 0; i < info.QueueTypes.size(); i++) {
+        queueIndices.push_back(GetQueueFamilyIndex(physicalDevice, surface, QueueType::Graphics));
+        queueIndices.push_back(GetQueueFamilyIndex(physicalDevice, surface, QueueType::AsyncCompute));
+        queueIndices.push_back(GetQueueFamilyIndex(physicalDevice, surface, QueueType::AsyncTransfer));
 
-            const auto& type = info.QueueTypes[i].first;
-
-            U32 index = GetQueueFamilyIndex(physicalDevice, surface, type);
-
-            queueIndices.push_back(index);
-        }
-
-        U64 index = 0;
+        F32 priority = 1.0f;
 
         for (U32 queueFamily : queueIndices) {
 
@@ -334,7 +332,7 @@ namespace BRQ { namespace VK {
             queueInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
             queueInfo.queueFamilyIndex = queueFamily;
             queueInfo.queueCount = 1;
-            queueInfo.pQueuePriorities = &info.QueueTypes[index++].second;
+            queueInfo.pQueuePriorities = &priority;
             queueCreateInfos.push_back(queueInfo);
         }
 
@@ -371,7 +369,7 @@ namespace BRQ { namespace VK {
         }
     }
 
-    VkSurfaceFormatKHR ChooseSwapchainFormat(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface) {
+    VkSurfaceFormatKHR ChooseSurfaceFormat(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface) {
 
         VkSurfaceFormatKHR format = {};
 
@@ -429,7 +427,7 @@ namespace BRQ { namespace VK {
         return format;
     }
 
-    VkPresentModeKHR ChooseSwapchainPresentMode(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface) {
+    VkPresentModeKHR ChooseSurfacePresentMode(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface) {
 
         auto modes = VK::GetPresentMode(physicalDevice, surface);
 
@@ -444,7 +442,7 @@ namespace BRQ { namespace VK {
         return VK_PRESENT_MODE_FIFO_KHR;
     }
 
-    VkExtent2D ChooseSwapchainExtent(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, const Window* window) {
+    VkExtent2D ChooseSurfaceExtent(const VkPhysicalDevice& physicalDevice, const VkSurfaceKHR& surface, const Window* window) {
 
         auto capabilities = VK::GetSurfaceCapabilities(physicalDevice, surface);
 
@@ -479,17 +477,17 @@ namespace BRQ { namespace VK {
         createInfo.components = info.Components;
         createInfo.subresourceRange = info.SubresourceRange;
         
-        VK_CHECK(vkCreateImageView(device, &createInfo, nullptr, &view.ImageView));
+        VK_CHECK(vkCreateImageView(device, &createInfo, nullptr, &view));
 
         return view;
     }
 
     void DestroyImageView(const VkDevice& device, ImageView& view) {
 
-        if (view.ImageView) {
+        if (view) {
 
-            vkDestroyImageView(device, view.ImageView, nullptr);
-            view.ImageView = VK_NULL_HANDLE;
+            vkDestroyImageView(device, view, nullptr);
+            view = VK_NULL_HANDLE;
         }
     }
 
@@ -514,7 +512,6 @@ namespace BRQ { namespace VK {
         VkSwapchainKHR swapchain = VK_NULL_HANDLE;
 
         std::vector<VkImage> images;
-        std::vector<Image> swapchainImages;
         std::vector<ImageView> swapchainImageViews;
 
         U32 imageCount = info.MinImageCount;
@@ -523,14 +520,11 @@ namespace BRQ { namespace VK {
 
         VK_CHECK(vkGetSwapchainImagesKHR(device, swapchain, &imageCount, nullptr));
         images.resize(imageCount);
-        swapchainImages.resize(imageCount);
         swapchainImageViews.resize(imageCount);
 
         VK_CHECK(vkGetSwapchainImagesKHR(device, swapchain, &imageCount, images.data()));
 
         for (U64 i = 0; i < images.size(); i++) {
-
-            swapchainImages[i].ImageAllocation.Image = images[i];
 
             ImageViewCreateInfo viewInfo = {};
             viewInfo.Image = images[i];
@@ -551,7 +545,7 @@ namespace BRQ { namespace VK {
 
         SwapchainResult result;
         result.Swapchain = swapchain;
-        result.SwapchainImages = std::move(swapchainImages);
+        result.SwapchainImages = std::move(images);
         result.SwapchainImageViews = std::move(swapchainImageViews);
 
         return result;
@@ -808,7 +802,7 @@ namespace BRQ { namespace VK {
         pipelines.clear();
     }
 
-    VkSemaphore CreateVKSemaphore(const VkDevice device, const SemaphoreCreateInfo& info) {
+    VkSemaphore CreateSemaphore(const VkDevice device, const SemaphoreCreateInfo& info) {
 
         VkSemaphoreCreateInfo createInfo = {};
         createInfo.sType = VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO;
@@ -821,7 +815,7 @@ namespace BRQ { namespace VK {
         return semaphore;
     }
 
-    void DestroyVKSemaphore(const VkDevice device, VkSemaphore semaphore) {
+    void DestroySemaphore(const VkDevice device, VkSemaphore semaphore) {
 
         if (semaphore) {
 
@@ -981,7 +975,7 @@ namespace BRQ { namespace VK {
             createInfo.usage = info.Usage | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         }
 
-        result.BufferAllocation = vma->CreateBuffer(createInfo, allocationInfo);
+        result = vma->CreateBuffer(createInfo, allocationInfo);
         return result;
     }
 
@@ -989,7 +983,7 @@ namespace BRQ { namespace VK {
 
         auto vma = VulkanMemoryAllocator::GetInstance();
 
-        vma->DestroyBuffer(buffer.BufferAllocation);
+        vma->DestroyBuffer(buffer);
     }
 
     void UploadBuffer(const VkDevice& device, const UploadBufferInfo& info) {
@@ -1025,7 +1019,7 @@ namespace BRQ { namespace VK {
             copyRegion.srcOffset = 0;
             copyRegion.dstOffset = 0;
             copyRegion.size = info.Size;
-            vkCmdCopyBuffer(info.CommandBuffer, stagingBuffer.Buffer, info.DestinationBuffer->BufferAllocation.Buffer, 1, &copyRegion);
+            vkCmdCopyBuffer(info.CommandBuffer, stagingBuffer.Buffer, info.DestinationBuffer->Buffer, 1, &copyRegion);
 
             CommandBufferEnd(info.CommandBuffer);
 
@@ -1044,11 +1038,11 @@ namespace BRQ { namespace VK {
         }
         else {
 
-            void* data = vma->MapMemory(info.DestinationBuffer->BufferAllocation);
+            void* data = vma->MapMemory(*info.DestinationBuffer);
 
             memcpy_s(data, info.Size, info.Data, info.Size);
 
-            vma->UnMapMemory(info.DestinationBuffer->BufferAllocation);
+            vma->UnMapMemory(*info.DestinationBuffer);
         }
     }
 

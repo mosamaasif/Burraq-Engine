@@ -13,17 +13,17 @@ namespace BRQ {
     class Application {
 
     private:
-        Application*		s_Application;
+        Application*     s_Application;
 
-        WindowProperties	m_WindowProperties;
-        Window*				m_Window;
+        WindowProperties m_WindowProperties;
+        Window*	         m_Window;
 
-        bool				m_Minimized;
+        bool             m_Minimized;
 
     protected:
-        Renderer*			m_Renderer;
-        CameraController    m_CameraController;
-        Input*              m_InputManager;
+        Renderer*        m_Renderer;
+        CameraController m_CameraController;
+        Input*           m_InputManager;
 
     protected:
         Application();

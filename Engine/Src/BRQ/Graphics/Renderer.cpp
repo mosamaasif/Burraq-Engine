@@ -8,7 +8,7 @@
 #include "Graphics/Mesh.h"
 
 #include "Platform/Vulkan/RenderContext.h"
-#include "Platform/Vulkan/VKCommands.h"
+#include "Platform/Vulkan/VulkanCommands.h"
 
 #include "Math/Math.h"
 #include "Skybox.h"
@@ -23,13 +23,11 @@ namespace BRQ {
     Renderer* Renderer::s_Renderer = nullptr;
 
     Renderer::Renderer()
-        : m_RenderContext(nullptr), m_RenderPass(VK_NULL_HANDLE),
-        m_Layout(VK_NULL_HANDLE), m_SkyboxLayout(), m_GraphicsPipeline(VK_NULL_HANDLE), m_SkyboxPipeline(VK_NULL_HANDLE), m_Window(nullptr) { }
+        : m_RenderContext(nullptr), m_Window(nullptr) { }
 
     void Renderer::Init(const Window* window) {
 
         s_Renderer = new Renderer();
-
         s_Renderer->InitInternal(window);
     }
 
@@ -40,42 +38,30 @@ namespace BRQ {
         delete s_Renderer;
     }
 
-    void Renderer::SubmitShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
-
-        m_ShaderResources = resources;
-
-        CreateGraphicsPipeline();
-    }
-
-    void Renderer::SubmitSkyboxShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
-
-        m_SkyboxShaderResources = resources;
-
-        CreateSkyboxPipeline();
-    }
-
     void Renderer::BeginScene(const Camera& camera) {
 
         U32 index = m_RenderContext->GetCurrentIndex();
 
-        VK::WaitForFence(m_RenderContext->GetDevice(), m_CommandBufferExecutedFences[index]);
-        VK::ResetFence(m_RenderContext->GetDevice(), m_CommandBufferExecutedFences[index]);
+        const PerFrame& perframe = m_PerFrameData[index];
 
-        VK::ResetCommandPool(m_RenderContext->GetDevice(), m_CommandPools[index]);
+        VK::WaitForFence(m_RenderContext->GetDevice(), perframe.CommandBufferExecutedFence);
+        VK::ResetFence(m_RenderContext->GetDevice(), perframe.CommandBufferExecutedFence);
 
-        VkCommandBuffer buffer = m_CommandBuffers[index];
+        VK::ResetCommandPool(m_RenderContext->GetDevice(), perframe.CommandPool);
 
-        VkResult result = m_RenderContext->AcquireImageIndex(m_ImageAvailableSemaphores[index]);
+        VkCommandBuffer buffer = perframe.CommandBuffer;
+
+        VkResult result = m_RenderContext->AcquireImageIndex(perframe.ImageAvailableSemaphore);
 
         if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
 
             RecreateSwapchain();
-            result = m_RenderContext->AcquireImageIndex(m_ImageAvailableSemaphores[index]);
+            result = m_RenderContext->AcquireImageIndex(perframe.ImageAvailableSemaphore);
         }
 
         if (result != VK_SUCCESS) {
 
-            VK::QueueWaitIdle(m_RenderContext->GetGraphicsAndPresentationQueue());
+            VK::QueueWaitIdle(m_RenderContext->GetPresentationQueue());
             return;
         }
 
@@ -89,7 +75,7 @@ namespace BRQ {
 
         VK::RenderPassBeginInfo info = {};
         info.CommandBuffer = buffer;
-        info.RenderPass = m_RenderPass;
+        info.RenderPass = m_RenderContext->GetRenderPass();
         info.Framebuffer = m_Framebuffers[imageIndex];
         info.RenderArea.extent = m_RenderContext->GetSwapchainExtent2D();
         info.RenderArea.offset = { 0, 0 };
@@ -113,41 +99,45 @@ namespace BRQ {
         vkCmdSetViewport(buffer, 0, 1, &viewport);
         vkCmdSetScissor(buffer, 0, 1, &scissor);
 
-        vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_GraphicsPipeline);
+        m_Pipeline.Bind(buffer);
+
         VkDeviceSize offset = 0;
-        vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.VertexBuffer.BufferAllocation.Buffer, &offset);
-        vkCmdBindIndexBuffer(buffer, mesh.IndexBuffer.BufferAllocation.Buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdBindVertexBuffers(buffer, 0, 1, &mesh.VertexBuffer.Buffer, &offset);
+        vkCmdBindIndexBuffer(buffer, mesh.IndexBuffer.Buffer, 0, VK_INDEX_TYPE_UINT32);
 
         glm::mat4 pv = camera.GetProjectionMatrix() * camera.GetViewMatrix();
 
-        vkCmdPushConstants(buffer, m_Layout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pv[0]);
-        vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, 1, &m_DescriptorSet[index], 0, nullptr);
+        m_Pipeline.PushConstantData(buffer, PipelineStage::Vertex, &pv[0], sizeof(glm::mat4), 0);
+        m_Pipeline.BindDescriptorSets(buffer, m_PerFrameData[index].DescriptorSets.data(), (U32)m_PerFrameData[index].DescriptorSets.size());
 
         vkCmdDrawIndexed(buffer, (U32)mesh.IndexCount, 1, 0, 0, 0);
 
         // ------------------------------------------------------
 
-        vkCmdBindPipeline(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SkyboxPipeline);
+        m_Skybox.Bind(buffer);
         offset = 0;
 
-        auto vBuffer = skybox.GetVertexBuffer().BufferAllocation.Buffer;
-        auto iBuffer = skybox.GetIndexBuffer().BufferAllocation.Buffer;
+        auto vBuffer = skybox.GetVertexBuffer().Buffer;
+        auto iBuffer = skybox.GetIndexBuffer().Buffer;
 
         vkCmdBindVertexBuffers(buffer, 0, 1, &vBuffer, &offset);
         vkCmdBindIndexBuffer(buffer, iBuffer, 0, VK_INDEX_TYPE_UINT32);
 
+        glm::mat4 cam = camera.GetProjectionMatrix() * glm::mat4(glm::mat3(camera.GetViewMatrix()));
 
-        vkCmdPushConstants(buffer, m_SkyboxLayout, VK_SHADER_STAGE_VERTEX_BIT, 0, sizeof(glm::mat4), &pv[0]);
-        vkCmdBindDescriptorSets(buffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_SkyboxLayout, 0, 1, &m_SkyboxDescriptorSet[index], 0, nullptr);
+        m_Skybox.PushConstantData(buffer, PipelineStage::Vertex, &cam[0], sizeof(glm::mat4), 0);
+        m_Skybox.BindDescriptorSets(buffer, m_PerFrameData[index].SkyboxDescriptorSets.data(), (U32)m_PerFrameData[index].SkyboxDescriptorSets.size());
 
         vkCmdDrawIndexed(buffer, skybox.GetIndexCount(), 1, 0, 0, 0);
-
     }
 
     void Renderer::EndScene() {
 
         U32 index = m_RenderContext->GetCurrentIndex();
-        VkCommandBuffer buffer = m_CommandBuffers[index];
+
+        const PerFrame& perframe = m_PerFrameData[index];
+
+        VkCommandBuffer buffer = perframe.CommandBuffer;
 
         VK::CommandEndRenderPass(buffer);
 
@@ -155,14 +145,14 @@ namespace BRQ {
 
         VK::QueueSubmitInfo submitInfo = {};
         submitInfo.WaitSemaphoreCount = 1;
-        submitInfo.WaitSemaphores = &m_ImageAvailableSemaphores[index];
+        submitInfo.WaitSemaphores = &perframe.ImageAvailableSemaphore;
         submitInfo.WaitDstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
         submitInfo.CommandBufferCount = 1;
         submitInfo.CommandBuffers = &buffer;
         submitInfo.SignalSemaphoreCount = 1;
-        submitInfo.SignalSemaphores = &m_RenderFinishedSemaphores[index];
-        submitInfo.Queue = m_RenderContext->GetGraphicsAndPresentationQueue();
-        submitInfo.CommandBufferExecutedFence = m_CommandBufferExecutedFences[index];
+        submitInfo.SignalSemaphores = &perframe.RenderFinishedSemaphore;
+        submitInfo.Queue = m_RenderContext->GetGraphicsQueue();
+        submitInfo.CommandBufferExecutedFence = perframe.CommandBufferExecutedFence;
 
         VK::QueueSubmit(submitInfo);
     }
@@ -170,7 +160,10 @@ namespace BRQ {
     void Renderer::Present() {
 
         U32 index = m_RenderContext->GetCurrentIndex();
-        VkResult result = m_RenderContext->Present(m_RenderFinishedSemaphores[index]);
+
+        const PerFrame& perframe = m_PerFrameData[index];
+
+        VkResult result = m_RenderContext->Present(perframe.RenderFinishedSemaphore);
 
         if (result == VK_SUBOPTIMAL_KHR || result == VK_ERROR_OUT_OF_DATE_KHR) {
 
@@ -186,18 +179,19 @@ namespace BRQ {
 
         m_Window = window;
 
-        RenderContext::Init(window, { { VK::QueueType::Graphics, 1.0f } });
+        RenderContext::Init(window);
 
         m_RenderContext = RenderContext::GetInstance();
 
-        CreateRenderPass();
         CreateFramebuffers();
-        CreateDescriptorSetLayout();
         CreateTexture();
         CreateSkybox();
+        
+        CreateGraphicsPipeline();
+        CreateSkyboxPipeline();
+
         CreateDescriptorPool();
         CreateDescriptorSets();
-        CreatePipelineLayouts();
         CreateCommands();
         CreateSyncronizationPrimitives();
 
@@ -219,13 +213,10 @@ namespace BRQ {
         DestroyCommands();
         DestroyGraphicsPipeline();
         DestroySkyboxPipeline();
-        DestroyPipelineLayouts();
         DestroyDescriptorPool();
         DestroySkybox();
         DestroyTexture();
-        DestoryDescriptorSetLayout();
         DestroyFramebuffers();
-        DestroyRenderPass();
         
         RenderContext::Destroy();
     }
@@ -239,53 +230,6 @@ namespace BRQ {
         CreateFramebuffers();
     }
 
-    void Renderer::CreateRenderPass() {
-
-        VK::AttachmentDescription depth = {};
-        depth.Format = VK::FindDepthImageFormat(m_RenderContext->GetPhysicalDevice());
-        depth.Samples = VK_SAMPLE_COUNT_1_BIT;
-        depth.LoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        depth.StoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depth.StencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        depth.StencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        depth.InitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        depth.FinalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-        VK::AttachmentDescription color = {};
-        color.Format = m_RenderContext->GetSwapchainImageFormat();
-        color.Samples = VK_SAMPLE_COUNT_1_BIT;
-        color.LoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-        color.StoreOp = VK_ATTACHMENT_STORE_OP_STORE;
-        color.StencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-        color.StencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        color.InitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        color.FinalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
-
-        VK::SubpassDescription subpass = {};
-        subpass.ColorAttachments = { VK::GetAttachmentReference({ 0, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL }) };
-        subpass.DepthStencilAttachment = VK::GetAttachmentReference({ 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL });
-        
-        VK::SubpassDependency dependency = {};
-        dependency.SrcSubpass = VK_SUBPASS_EXTERNAL;
-        dependency.DstSubpass = 0;
-        dependency.SrcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.SrcAccessMask = 0;
-        dependency.DstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT;
-        dependency.DstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-
-        VK::RenderPassCreateInfo info = {};
-        info.Attachments = { VK::GetAttachmentDescription(color), VK::GetAttachmentDescription(depth) };
-        info.Dependencies = { VK::GetSubpassDependency(dependency) };
-        info.Subpasses = { VK::GetSubpassDescription(subpass) };
-        
-        m_RenderPass = VK::CreateRenderPass(m_RenderContext->GetDevice(), info);
-    }
-
-    void Renderer::DestroyRenderPass() {
-
-        VK::DestroyRenderPass(m_RenderContext->GetDevice(), m_RenderPass);
-    }
-
     void Renderer::CreateFramebuffers() {
 
         m_Framebuffers.resize(m_RenderContext->GetImageCount());
@@ -293,13 +237,13 @@ namespace BRQ {
         VkExtent2D extent = m_RenderContext->GetSwapchainExtent2D();
 
         const auto& views = m_RenderContext->GetImageViews();
-        
+
         for (U64 i = 0; i < m_Framebuffers.size(); i++) {
 
             VK::FramebufferCreateInfo info = {};
-            info.Attachments = { views[i].ImageView, m_RenderContext->GetDepthView().ImageView };
+            info.Attachments = { views[i], m_RenderContext->GetDepthView() };
             info.Layers = 1;
-            info.RenderPass = m_RenderPass;
+            info.RenderPass = m_RenderContext->GetRenderPass();
             info.Height = extent.height;
             info.Width = extent.width;
 
@@ -317,262 +261,61 @@ namespace BRQ {
         m_Framebuffers.clear();
     }
 
-    void Renderer::CreatePipelineLayouts() {
-
-        VkPushConstantRange push;
-        push.offset = 0;
-        push.size = sizeof(glm::mat4);
-        push.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;
-
-        VK::PipelineLayoutCreateInfo info = {};
-        info.SetLayouts.push_back(m_DescriptorSetLayout);
-        info.PushConstantRanges.push_back(push);
-
-        m_Layout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
-        m_SkyboxLayout = VK::CreatePipelineLayout(m_RenderContext->GetDevice(), info);
-    }
-
-    void Renderer::DestroyPipelineLayouts() {
-
-        VK::DestroyPipelineLayout(m_RenderContext->GetDevice(), m_Layout);
-        VK::DestroyPipelineLayout(m_RenderContext->GetDevice(), m_SkyboxLayout);
-    }
-
     void Renderer::CreateGraphicsPipeline() {
 
-        std::vector shaders = std::move(LoadShaders(m_ShaderResources));
+        BufferLayout layout;
+        layout.PushElement(ElementType::Vec3, 3 * sizeof(float));
+        layout.PushElement(ElementType::Vec2, 2 * sizeof(float));
 
-        VkVertexInputBindingDescription bindingDescription = {};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(Vertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        GraphicsPipelineCreateInfo info = {};
+        info.Layout = layout;
+        info.Flags = (GraphicsPipelineFlags)(EnableCulling | DepthWriteEnabled | DepthTestEnabled | DepthCompareLess);
+        info.Shaders = { { "Resources/Shaders/shader.vert.spv" }, { "Resources/Shaders/shader.frag.spv" } };
 
-        VkVertexInputAttributeDescription attributeDescription[2] = { {}, {} };
-
-        attributeDescription[0].binding = 0;
-        attributeDescription[0].location = 0;
-        attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription[0].offset = offsetof(Vertex, x);
-
-        attributeDescription[1].binding = 0;
-        attributeDescription[1].location = 1;
-        attributeDescription[1].format = VK_FORMAT_R32G32_SFLOAT;
-        attributeDescription[1].offset = offsetof(Vertex, u);
-
-        //attributeDescription[2].binding = 0;
-        //attributeDescription[2].location = 1;
-        //attributeDescription[2].format = VK_FORMAT_R32G32B32_SFLOAT;
-        //attributeDescription[2].offset = offsetof(Vertex, nx);
-
-        VkPipelineVertexInputStateCreateInfo vertexInfo = {};
-        vertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        vertexInfo.vertexBindingDescriptionCount = 1;
-        vertexInfo.vertexAttributeDescriptionCount = 2;
-        vertexInfo.pVertexAttributeDescriptions = attributeDescription;
-        vertexInfo.pVertexBindingDescriptions = &bindingDescription;
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-        VkPipelineViewportStateCreateInfo viewportState = {};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;
-        viewportState.scissorCount = 1;
-
-        VkPipelineRasterizationStateCreateInfo rasterizer = {};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.depthClampEnable = VK_FALSE;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_BACK_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        rasterizer.depthBiasEnable = VK_FALSE; 
-
-        VkPipelineMultisampleStateCreateInfo multisampling = {};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_FALSE;
-
-        VkPipelineColorBlendStateCreateInfo colorBlending = {};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
-        colorBlending.blendConstants[0] = 0.0f;
-        colorBlending.blendConstants[1] = 0.0f;
-        colorBlending.blendConstants[2] = 0.0f;
-        colorBlending.blendConstants[3] = 0.0f;
-
-        auto stages = std::move(GetPipelineShaderStageInfos(shaders));
-
-        std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-
-        VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
-        dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicStateInfo.pDynamicStates = dynamicStates.data();
-        dynamicStateInfo.dynamicStateCount = (U32)dynamicStates.size();
-
-        VkPipelineDepthStencilStateCreateInfo depthStencil = {};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_TRUE;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.stencilTestEnable = VK_FALSE;
-
-        VK::GraphicsPipelineCreateInfo info = {};
-        info.Stages = stages;
-        info.VertexInputState = vertexInfo;
-        info.InputAssemblyState = inputAssembly;
-        info.ViewportState = viewportState;
-        info.RasterizationState = rasterizer;
-        info.MultisampleState = multisampling;
-        info.DepthStencilState = depthStencil;
-        info.ColorBlendState = colorBlending;
-        info.DynamicState = dynamicStateInfo;
-        info.Layout = m_Layout;
-        info.RenderPass = m_RenderPass;
-    
-        m_GraphicsPipeline = VK::CreateGraphicsPipeline(m_RenderContext->GetDevice(), info);
-        
-        DestroyShaders(shaders);
+        m_Pipeline.Init(info);
     }
 
     void Renderer::DestroyGraphicsPipeline() {
 
-        VK::DestroyGraphicsPipeline(m_RenderContext->GetDevice(), m_GraphicsPipeline);
+        m_Pipeline.Destroy();
     }
 
     void Renderer::CreateSkyboxPipeline() {
 
-        VkVertexInputBindingDescription bindingDescription = {};
-        bindingDescription.binding = 0;
-        bindingDescription.stride = sizeof(SkyboxVertex);
-        bindingDescription.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+        BufferLayout layout;
+        layout.PushElement(ElementType::Vec3, 3 * sizeof(float));
 
-        VkVertexInputAttributeDescription attributeDescription[1] = { {} };
+        GraphicsPipelineCreateInfo info = {};
+        info.Layout = layout;
+        info.Flags = (GraphicsPipelineFlags)(DepthTestEnabled | DepthCompareLess | DepthCompareEqual | CullModeFrontFace | EnableCulling);
+        info.Shaders = { { "Resources/Shaders/skyboxShader.vert.spv" }, { "Resources/Shaders/skyboxShader.frag.spv" } };
 
-        attributeDescription[0].binding = 0;
-        attributeDescription[0].location = 0;
-        attributeDescription[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-        attributeDescription[0].offset = offsetof(SkyboxVertex, x);
-
-        VkPipelineVertexInputStateCreateInfo SkyboxVertexInfo = {};
-        SkyboxVertexInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-        SkyboxVertexInfo.vertexBindingDescriptionCount = 1;
-        SkyboxVertexInfo.vertexAttributeDescriptionCount = sizeof(attributeDescription) / sizeof(attributeDescription[0]);
-        SkyboxVertexInfo.pVertexAttributeDescriptions = attributeDescription;
-        SkyboxVertexInfo.pVertexBindingDescriptions = &bindingDescription;
-
-        VkPipelineInputAssemblyStateCreateInfo inputAssembly = {};
-        inputAssembly.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-        inputAssembly.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-        inputAssembly.primitiveRestartEnable = VK_FALSE;
-
-        VkPipelineViewportStateCreateInfo viewportState = {};
-        viewportState.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-        viewportState.viewportCount = 1;
-        viewportState.scissorCount = 1;
-
-        VkPipelineRasterizationStateCreateInfo rasterizer = {};
-        rasterizer.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-        rasterizer.depthClampEnable = VK_FALSE;
-        rasterizer.rasterizerDiscardEnable = VK_FALSE;
-        rasterizer.polygonMode = VK_POLYGON_MODE_FILL;
-        rasterizer.lineWidth = 1.0f;
-        rasterizer.cullMode = VK_CULL_MODE_FRONT_BIT;
-        rasterizer.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-        rasterizer.depthBiasEnable = VK_FALSE;
-
-        VkPipelineMultisampleStateCreateInfo multisampling = {};
-        multisampling.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-        multisampling.sampleShadingEnable = VK_FALSE;
-        multisampling.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-        VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
-        colorBlendAttachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-        colorBlendAttachment.blendEnable = VK_FALSE;
-
-        VkPipelineColorBlendStateCreateInfo colorBlending = {};
-        colorBlending.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-        colorBlending.logicOpEnable = VK_FALSE;
-        colorBlending.logicOp = VK_LOGIC_OP_COPY;
-        colorBlending.attachmentCount = 1;
-        colorBlending.pAttachments = &colorBlendAttachment;
-        colorBlending.blendConstants[0] = 0.0f;
-        colorBlending.blendConstants[1] = 0.0f;
-        colorBlending.blendConstants[2] = 0.0f;
-        colorBlending.blendConstants[3] = 0.0f;
-
-        std::vector<VkDynamicState> dynamicStates = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-
-        VkPipelineDynamicStateCreateInfo dynamicStateInfo = {};
-        dynamicStateInfo.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-        dynamicStateInfo.pDynamicStates = dynamicStates.data();
-        dynamicStateInfo.dynamicStateCount = (U32)dynamicStates.size();
-
-        VkPipelineDepthStencilStateCreateInfo depthStencil = {};
-        depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-        depthStencil.depthCompareOp = VK_COMPARE_OP_LESS_OR_EQUAL;
-        depthStencil.depthBoundsTestEnable = VK_FALSE;
-        depthStencil.stencilTestEnable = VK_FALSE;
-        depthStencil.depthTestEnable = VK_TRUE;
-        depthStencil.depthWriteEnable = VK_FALSE;
-
-        auto shaders = std::move(LoadShaders(m_SkyboxShaderResources));
-        auto stages = std::move(GetPipelineShaderStageInfos(shaders));
-
-        VK::GraphicsPipelineCreateInfo info = {};
-        info.Stages = stages;
-        info.VertexInputState = SkyboxVertexInfo;
-        info.InputAssemblyState = inputAssembly;
-        info.ViewportState = viewportState;
-        info.RasterizationState = rasterizer;
-        info.MultisampleState = multisampling;
-        info.DepthStencilState = depthStencil;
-        info.ColorBlendState = colorBlending;
-        info.DynamicState = dynamicStateInfo;
-        info.Layout = m_SkyboxLayout;
-        info.RenderPass = m_RenderPass;
-
-        m_SkyboxPipeline = VK::CreateGraphicsPipeline(m_RenderContext->GetDevice(), info);
-
-        DestroyShaders(shaders);
+        m_Skybox.Init(info);
     }
 
     void Renderer::DestroySkyboxPipeline() {
 
-        VK::DestroyGraphicsPipeline(m_RenderContext->GetDevice(), m_SkyboxPipeline);
+        m_Skybox.Destroy();
     }
 
     void Renderer::CreateCommands() {
-
-        m_CommandPools.resize(FRAME_LAG);
-        m_CommandPools.reserve(FRAME_LAG);
 
         for (U64 i = 0; i < FRAME_LAG; i++) {
 
             VK::CommandPoolCreateInfo info = {};
             info.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-            info.QueueFamilyIndex = m_RenderContext->GetGraphicsAndPresentationQueueIndex();
+            info.QueueFamilyIndex = m_RenderContext->GetGraphicsQueueIndex();
 
-            m_CommandPools[i] = VK::CreateCommandPool(m_RenderContext->GetDevice(), info);
+            m_PerFrameData[i].CommandPool = VK::CreateCommandPool(m_RenderContext->GetDevice(), info);
 
             VK::CommandBufferAllocateInfo allocateInfo = {};
-            allocateInfo.CommandPool = m_CommandPools[i];
+            allocateInfo.CommandPool = m_PerFrameData[i].CommandPool;
             allocateInfo.Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
             allocateInfo.CommandBufferCount = 1;
 
+            // CHANGE THIS
             auto buffer = VK::AllocateCommandBuffers(m_RenderContext->GetDevice(), allocateInfo);
-            m_CommandBuffers.push_back(buffer[0]);
+            m_PerFrameData[i].CommandBuffer = buffer[0];
         }
     }
 
@@ -580,25 +323,20 @@ namespace BRQ {
 
         for (U64 i = 0; i < FRAME_LAG; i++) {
 
-            VK::FreeCommandBuffer(m_RenderContext->GetDevice(), m_CommandPools[i], m_CommandBuffers[i]);
-            VK::DestroyCommandPool(m_RenderContext->GetDevice(), m_CommandPools[i]);
+#if defined(BRQ_DEBUG)
+            VK::FreeCommandBuffer(m_RenderContext->GetDevice(), m_PerFrameData[i].CommandPool, m_PerFrameData[i].CommandBuffer);
+#endif
+            VK::DestroyCommandPool(m_RenderContext->GetDevice(), m_PerFrameData[i].CommandPool);
         }
-
-        m_CommandBuffers.clear();
-        m_CommandPools.clear();
     }
 
     void Renderer::CreateSyncronizationPrimitives() {
 
-        m_ImageAvailableSemaphores.resize(FRAME_LAG);
-        m_RenderFinishedSemaphores.resize(FRAME_LAG);
-        m_CommandBufferExecutedFences.resize(FRAME_LAG);
-
         for (U64 i = 0; i < FRAME_LAG; i++) {
 
-            m_ImageAvailableSemaphores[i] = VK::CreateVKSemaphore(m_RenderContext->GetDevice());
-            m_RenderFinishedSemaphores[i] = VK::CreateVKSemaphore(m_RenderContext->GetDevice());
-            m_CommandBufferExecutedFences[i] = VK::CreateFence(m_RenderContext->GetDevice());
+            m_PerFrameData[i].ImageAvailableSemaphore = VK::CreateSemaphore(m_RenderContext->GetDevice());
+            m_PerFrameData[i].RenderFinishedSemaphore = VK::CreateSemaphore(m_RenderContext->GetDevice());
+            m_PerFrameData[i].CommandBufferExecutedFence = VK::CreateFence(m_RenderContext->GetDevice());
         }
     }
 
@@ -606,125 +344,98 @@ namespace BRQ {
 
         for (U64 i = 0; i < FRAME_LAG; i++) {
 
-            VK::DestroyVKSemaphore(m_RenderContext->GetDevice(), m_ImageAvailableSemaphores[i]);
-            VK::DestroyVKSemaphore(m_RenderContext->GetDevice(), m_RenderFinishedSemaphores[i]);
-            VK::DestroyFence(m_RenderContext->GetDevice(), m_CommandBufferExecutedFences[i]);
+            VK::DestroySemaphore(m_RenderContext->GetDevice(), m_PerFrameData[i].ImageAvailableSemaphore);
+            VK::DestroySemaphore(m_RenderContext->GetDevice(), m_PerFrameData[i].RenderFinishedSemaphore);
+            VK::DestroyFence(m_RenderContext->GetDevice(), m_PerFrameData[i].CommandBufferExecutedFence);
         }
-
-        m_ImageAvailableSemaphores.clear();
-        m_RenderFinishedSemaphores.clear();
-        m_CommandBufferExecutedFences.clear();
-    }
-
-    void Renderer::CreateDescriptorSetLayout() {
-
-        VkDescriptorSetLayoutBinding binding = {};
-        binding.binding = 0;
-        binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        binding.descriptorCount = 1;
-        binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;
-
-        VK::DescriptorSetLayoutCreateInfo info = {};
-        info.BindingCount = 1;
-        info.Bindings = &binding;
-
-        m_DescriptorSetLayout = VK::CreateDescriptorSetLayout(m_RenderContext->GetDevice(), info);
-        m_SkyboxDescriptorSetLayout = VK::CreateDescriptorSetLayout(m_RenderContext->GetDevice(), info);
-    }
-
-    void Renderer::DestoryDescriptorSetLayout() {
-
-        VK::DestoryDescriptorSetLayout(m_RenderContext->GetDevice(), m_DescriptorSetLayout);
-        VK::DestoryDescriptorSetLayout(m_RenderContext->GetDevice(), m_SkyboxDescriptorSetLayout);
     }
 
     void Renderer::CreateDescriptorPool() {
 
         VkDescriptorPoolSize size = {};
         size.type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-        size.descriptorCount = m_RenderContext->GetImageCount();
+        size.descriptorCount = 1;
 
         VK::DescriptorPoolCreateInfo info = {};
-        info.MaxSets = size.descriptorCount;
+        info.MaxSets = 4;
         info.PoolSizeCount = 1;
         info.PoolSizes = &size;
 
-        m_DescriptorPool.push_back(VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info));
-        m_SkyboxDescriptorPool.push_back(VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info));
+        for (U64 i = 0; i < FRAME_LAG; i++) {
+
+            m_PerFrameData[i].SkyboxDescriptorPool = VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info);
+            m_PerFrameData[i].DescriptorPool = VK::CreateDescriptorPool(m_RenderContext->GetDevice(), info);
+        }
     }
 
     void Renderer::DestroyDescriptorPool() {
 
-        for (auto& pool : m_DescriptorPool) {
+        for (U64 i = 0; i < FRAME_LAG; i++) {
 
-            VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), pool);
+            VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), m_PerFrameData[i].DescriptorPool);
+            VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), m_PerFrameData[i].SkyboxDescriptorPool);
         }
-
-        for (auto& pool : m_SkyboxDescriptorPool) {
-
-            VK::DestoryDescriptorPool(m_RenderContext->GetDevice(), pool);
-        }
-
-        m_DescriptorPool.clear();
-        m_SkyboxDescriptorPool.clear();
     }
 
     void Renderer::CreateDescriptorSets() {
 
-        std::vector<VkDescriptorSetLayout> layouts(m_RenderContext->GetImageCount(), m_DescriptorSetLayout);
-        std::vector<VkDescriptorSetLayout> skyboxLayouts(m_RenderContext->GetImageCount(), m_SkyboxDescriptorSetLayout);
+        std::vector<VkDescriptorSetLayout> layouts = m_Pipeline.GetDescriptorSetLayouts();
+        std::vector<VkDescriptorSetLayout> skyboxLayouts =  m_Skybox.GetDescriptorSetLayouts();
 
-        VK::DescriptorSetAllocateInfo info = {};
-        info.DescriptorPool = m_DescriptorPool[0];
-        info.DescriptorSetCount = m_RenderContext->GetImageCount();
-        info.SetLayouts = layouts.data();
+        for (U64 i = 0; i < FRAME_LAG; i++) {
 
-        m_DescriptorSet = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
+            VK::DescriptorSetAllocateInfo info = {};
+            info.DescriptorPool = m_PerFrameData[i].DescriptorPool;
+            info.DescriptorSetCount = (U32)layouts.size();
+            info.SetLayouts = layouts.data();
 
-        info.DescriptorPool = m_SkyboxDescriptorPool[0];
-        info.DescriptorSetCount = m_RenderContext->GetImageCount();
-        info.SetLayouts = skyboxLayouts.data();
+            m_PerFrameData[i].DescriptorSets = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
 
-        m_SkyboxDescriptorSet = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
+            info.DescriptorPool = m_PerFrameData[i].SkyboxDescriptorPool;
+            info.DescriptorSetCount = (U32)skyboxLayouts.size();
+            info.SetLayouts = skyboxLayouts.data();
 
-        for (size_t i = 0; i < m_DescriptorSet.size(); i++) {
+            m_PerFrameData[i].SkyboxDescriptorSets = std::move(VK::AllocateDescriptorSets(m_RenderContext->GetDevice(), info));
+
+            for (U64 j = 0; j < m_PerFrameData[i].DescriptorSets.size(); j++) {
         
-            VkDescriptorImageInfo imageInfo = {};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = m_Texture2D->GetImageView().ImageView;
-            imageInfo.sampler = m_Texture2D->GetSampler();
+                VkDescriptorImageInfo imageInfo = {};
+                imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                imageInfo.imageView = m_Texture2D->GetImageView();
+                imageInfo.sampler = m_Texture2D->GetSampler();
         
-            VkWriteDescriptorSet descriptorWrites = {};
+                VkWriteDescriptorSet descriptorWrites = {};
         
-            descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.dstSet = m_DescriptorSet[i];
-            descriptorWrites.dstBinding = 0;
-            descriptorWrites.dstArrayElement = 0;
-            descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.descriptorCount = 1;
-            descriptorWrites.pImageInfo = &imageInfo;
+                descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                descriptorWrites.dstSet = m_PerFrameData[i].DescriptorSets[j];
+                descriptorWrites.dstBinding = 0;
+                descriptorWrites.dstArrayElement = 0;
+                descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                descriptorWrites.descriptorCount = 1;
+                descriptorWrites.pImageInfo = &imageInfo;
         
-            vkUpdateDescriptorSets(m_RenderContext->GetDevice(), 1, &descriptorWrites, 0, nullptr);
-        }
+                vkUpdateDescriptorSets(m_RenderContext->GetDevice(), 1, &descriptorWrites, 0, nullptr);
 
-        for (size_t i = 0; i < m_SkyboxDescriptorSet.size(); i++) {
+                for (size_t j = 0; j < m_PerFrameData[i].SkyboxDescriptorSets.size(); j++) {
 
-            VkDescriptorImageInfo imageInfo = {};
-            imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-            imageInfo.imageView = m_TextureCube->GetImageView().ImageView;
-            imageInfo.sampler = m_TextureCube->GetSampler();
+                    VkDescriptorImageInfo imageInfo = {};
+                    imageInfo.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+                    imageInfo.imageView = m_TextureCube->GetImageView();
+                    imageInfo.sampler = m_TextureCube->GetSampler();
 
-            VkWriteDescriptorSet descriptorWrites = {};
+                    VkWriteDescriptorSet descriptorWrites = {};
 
-            descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
-            descriptorWrites.dstSet = m_SkyboxDescriptorSet[i];
-            descriptorWrites.dstBinding = 0;
-            descriptorWrites.dstArrayElement = 0;
-            descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-            descriptorWrites.descriptorCount = 1;
-            descriptorWrites.pImageInfo = &imageInfo;
+                    descriptorWrites.sType = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET;
+                    descriptorWrites.dstSet = m_PerFrameData[i].SkyboxDescriptorSets[j];
+                    descriptorWrites.dstBinding = 0;
+                    descriptorWrites.dstArrayElement = 0;
+                    descriptorWrites.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+                    descriptorWrites.descriptorCount = 1;
+                    descriptorWrites.pImageInfo = &imageInfo;
 
-            vkUpdateDescriptorSets(m_RenderContext->GetDevice(), 1, &descriptorWrites, 0, nullptr);
+                    vkUpdateDescriptorSets(m_RenderContext->GetDevice(), 1, &descriptorWrites, 0, nullptr);
+                }
+            }
         }
     }
 
@@ -755,39 +466,5 @@ namespace BRQ {
     void Renderer::DestroySkybox() {
 
         delete m_TextureCube;
-    }
-
-    std::vector<VKShader> Renderer::LoadShaders(const std::vector<std::pair<std::string, VKShader::ShaderType>>& resources) {
-
-        std::vector<VKShader> shaders(resources.size());
-
-        for (U64 i = 0; i < shaders.size(); i++) {
-
-            shaders[i].Create(m_RenderContext->GetDevice(), resources[i].first, resources[i].second);
-        }
-
-        return std::move(shaders);
-    }
-
-    void Renderer::DestroyShaders(std::vector<VKShader>& shaders) {
-
-        for (U64 i = 0; i < shaders.size(); i++) {
-
-            shaders[i].Destroy(m_RenderContext->GetDevice());
-        }
-
-        shaders.clear();
-    }
-
-    std::vector<VkPipelineShaderStageCreateInfo> Renderer::GetPipelineShaderStageInfos(const std::vector<VKShader>& shaders) {
-
-        std::vector<VkPipelineShaderStageCreateInfo> result(shaders.size());
-
-        for (U64 i = 0; i < shaders.size(); i++) {
-
-            result[i] = shaders[i].GetPipelineShaderStageInfo();
-        }
-
-        return std::move(result);
     }
 }

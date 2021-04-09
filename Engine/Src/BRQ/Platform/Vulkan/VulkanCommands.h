@@ -2,8 +2,7 @@
 
 #include <BRQ.h>
 
-#include <vulkan/vulkan.h>
-#include "VKInitializers.h"
+#include "VulkanHelpers.h"
 
 namespace BRQ { namespace VK {
 
@@ -26,5 +25,4 @@ namespace BRQ { namespace VK {
 
         vkCmdEndRenderPass(commandBuffer);
     }
-
 } }

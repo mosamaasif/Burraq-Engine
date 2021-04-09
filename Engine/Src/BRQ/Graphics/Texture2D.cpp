@@ -59,11 +59,11 @@ namespace BRQ {
 
         VK::Buffer buffer = VK::CreateBuffer(bufferInfo);
 
-        void* data = vma->MapMemory(buffer.BufferAllocation);
+        void* data = vma->MapMemory(buffer);
 
         memcpy_s(data, size, image, size);
 
-        vma->UnMapMemory(buffer.BufferAllocation);
+        vma->UnMapMemory(buffer);
 
         VK::ImageCreateInfo imageInfo = {};
         imageInfo.ImageType = VK_IMAGE_TYPE_2D;
@@ -84,7 +84,7 @@ namespace BRQ {
 
         VK::CommandPoolCreateInfo poolInfo = {};
         poolInfo.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        poolInfo.QueueFamilyIndex = context->GetGraphicsAndPresentationQueueIndex();
+        poolInfo.QueueFamilyIndex = context->GetGraphicsQueueIndex();
 
         VkCommandPool pool = VK::CreateCommandPool(context->GetDevice(), poolInfo);
 
@@ -96,7 +96,7 @@ namespace BRQ {
         auto cmd = VK::AllocateCommandBuffers(context->GetDevice(), allocateInfo);
 
         VK::ImageLayoutTransitionInfo transition = {};
-        transition.Image = m_Image.ImageAllocation.Image;
+        transition.Image = m_Image.Image;
         transition.Format = VK_FORMAT_R8G8B8A8_UNORM;
         transition.OldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         transition.NewLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -121,7 +121,7 @@ namespace BRQ {
         copyInfo.imageOffset = { 0, 0, 0 };
         copyInfo.imageExtent = { m_Width, m_Height, 1U };
 
-        vkCmdCopyBufferToImage(cmd[0], buffer.BufferAllocation.Buffer, m_Image.ImageAllocation.Image,
+        vkCmdCopyBufferToImage(cmd[0], buffer.Buffer, m_Image.Image,
             VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyInfo);
         
         transition.OldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -133,19 +133,19 @@ namespace BRQ {
         VK::QueueSubmitInfo submitInfo = {};
         submitInfo.CommandBufferCount = 1;
         submitInfo.CommandBuffers = &cmd[0];
-        submitInfo.Queue = context->GetGraphicsAndPresentationQueue();
+        submitInfo.Queue = context->GetGraphicsQueue();
 
         stbi_image_free(image);
 
         VK::QueueSubmit(submitInfo);
-        VK::QueueWaitIdle(context->GetGraphicsAndPresentationQueue());
+        VK::QueueWaitIdle(context->GetGraphicsQueue());
 
         VK::DestroyCommandPool(context->GetDevice(), pool);
         VK::DestoryBuffer(buffer);
 
 
         VK::ImageViewCreateInfo viewInfo = {};
-        viewInfo.Image = m_Image.ImageAllocation.Image;
+        viewInfo.Image = m_Image.Image;
         viewInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
         viewInfo.Format = imageInfo.Format;
         viewInfo.SubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;

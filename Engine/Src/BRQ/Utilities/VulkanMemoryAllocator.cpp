@@ -3,7 +3,7 @@
 #define VMA_IMPLEMENTATION
 #include "VulkanMemoryAllocator.h"
 
-#include "Platform/Vulkan/VKCommon.h"
+#include "Platform/Vulkan/VulkanCommon.h"
 
 namespace BRQ {
 

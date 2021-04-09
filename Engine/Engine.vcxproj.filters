@@ -1,22 +1,18 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup>
-    <ClCompile Include="Src\BRQ\Application\Window.cpp" />
     <ClCompile Include="Src\BRQ\Logger\ConsoleSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\FileSink.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Formatter.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Log.cpp" />
     <ClCompile Include="Src\BRQ\Logger\Logger.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Windows\WindowsWindow.cpp" />
     <ClCompile Include="Src\BRQ\BRQ.cpp" />
     <ClCompile Include="Src\BRQ\Application\Input.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\FileSystem.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKShader.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Renderer.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Mesh.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\VulkanMemoryAllocator.cpp" />
     <ClCompile Include="Src\BRQ\Platform\Vulkan\RenderContext.cpp" />
-    <ClCompile Include="Src\BRQ\Platform\Vulkan\VKInitializers.cpp" />
     <ClCompile Include="Src\BRQ\Application\Application.cpp" />
     <ClCompile Include="Src\BRQ\Camera\Camera.cpp" />
     <ClCompile Include="Src\BRQ\Camera\CameraController.cpp" />
@@ -24,6 +20,13 @@
     <ClCompile Include="Src\BRQ\Graphics\Texture2D.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\TextureCube.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Skybox.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VulkanDevice.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VulkanSwapchain.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\BufferLayout.cpp" />
+    <ClCompile Include="Src\BRQ\Graphics\GraphicsPipeline.cpp" />
+    <ClCompile Include="ThirdParty\SPIR-V-Reflect\spirv_reflect.cpp" />
+    <ClCompile Include="Src\BRQ\Platform\Vulkan\VulkanHelpers.cpp" />
+    <ClCompile Include="Src\BRQ\Application\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -34,7 +37,6 @@
     <ClInclude Include="Src\BRQ\Logger\FormatterUtility.h" />
     <ClInclude Include="Src\BRQ\Logger\Log.h" />
     <ClInclude Include="Src\BRQ\Logger\Logger.h" />
-    <ClInclude Include="Src\BRQ\Platform\Windows\WindowsWindow.h" />
     <ClInclude Include="Src\BRQ\Platform\Platform.h" />
     <ClInclude Include="Src\BRQ\Utilities\Types.h" />
     <ClInclude Include="Src\BRQ\BRQ.h" />
@@ -43,8 +45,6 @@
     <ClInclude Include="Src\BRQ\Application\Input.h" />
     <ClInclude Include="Src\BRQ\Events\KeyEvent.h" />
     <ClInclude Include="Src\BRQ\Events\MouseEvent.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommon.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKShader.h" />
     <ClInclude Include="Src\BRQ\Utilities\FileSystem.h" />
     <ClInclude Include="Src\BRQ\Graphics\Renderer.h" />
     <ClInclude Include="Src\BRQ\Events\WindowEvents.h" />
@@ -54,8 +54,6 @@
     <ClInclude Include="ThirdParty\VulkanMemoryAllocator\include\vk_mem_alloc.h" />
     <ClInclude Include="Src\BRQ\Utilities\VulkanMemoryAllocator.h" />
     <ClInclude Include="Src\BRQ\Platform\Vulkan\RenderContext.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKInitializers.h" />
-    <ClInclude Include="Src\BRQ\Platform\Vulkan\VKCommands.h" />
     <ClInclude Include="Src\BRQ\Application\Application.h" />
     <ClInclude Include="Src\Engine.h" />
     <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
@@ -66,7 +64,13 @@
     <ClInclude Include="Src\BRQ\Graphics\Texture2D.h" />
     <ClInclude Include="Src\BRQ\Graphics\TextureCube.h" />
     <ClInclude Include="Src\BRQ\Graphics\Skybox.h" />
-    <ClInclude Include="Src\BRQ\Graphics\Material.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanDevice.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanSwapchain.h" />
+    <ClInclude Include="Src\BRQ\Graphics\GraphicsPipeline.h" />
+    <ClInclude Include="Src\BRQ\Graphics\BufferLayout.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanHelpers.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanCommon.h" />
+    <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanCommands.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />
