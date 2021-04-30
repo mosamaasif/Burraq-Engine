@@ -6,7 +6,7 @@
 namespace BRQ {
 
     Skybox::Skybox()
-        : m_Size(100.0f) {
+        : m_Size(500.0f) {
     }
 
     Skybox::Skybox(F32 size)

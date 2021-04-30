@@ -7,3 +7,5 @@
 #else
     #define VK_CHECK(function) function
 #endif
+
+#define FRAME_LAG   3

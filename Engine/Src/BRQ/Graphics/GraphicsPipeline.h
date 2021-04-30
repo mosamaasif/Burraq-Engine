@@ -38,13 +38,45 @@ namespace BRQ {
         std::vector<ShaderStage> Shaders;
     };
 
+    struct DescriptorSetLayoutData {
+
+        std::string                     Name;
+        U32                             SetNumber;
+        VkDescriptorSetLayoutCreateInfo CreateInfo;
+    };
+
+    struct ReflectionData {
+
+        VkShaderStageFlagBits                Stage;
+        std::vector<VkPushConstantRange>     PushConstantRanges;
+        std::vector<DescriptorSetLayoutData> DescriptorSetLayoutData;
+
+        ReflectionData() = default;
+
+        ReflectionData(const ReflectionData& other) noexcept {
+
+            Stage = other.Stage;
+            PushConstantRanges = other.PushConstantRanges;
+            DescriptorSetLayoutData = other.DescriptorSetLayoutData;
+        }
+
+        ReflectionData(ReflectionData&& other) noexcept {
+
+            Stage = other.Stage;
+            PushConstantRanges = std::move(other.PushConstantRanges);
+            DescriptorSetLayoutData = std::move(other.DescriptorSetLayoutData);
+        }
+    };
+
     class GraphicsPipeline {
 
     private:
         VkPipelineLayout                   m_Layout;
         VkPipeline                         m_Pipeline;
+        VkDescriptorPool                   m_DescriptorPool;
         std::vector<VkDescriptorSetLayout> m_DescriptorSetLayouts;
         std::vector<ShaderStage>           m_Stages;
+        std::vector<ReflectionData>        m_ReflectionData;
 
     public:
         GraphicsPipeline();
@@ -53,46 +85,26 @@ namespace BRQ {
         void Init(const GraphicsPipelineCreateInfo& info);
         void Destroy();
 
-        void Bind(const VkCommandBuffer& commandBuffer);
-        void BindDescriptorSets(const VkCommandBuffer& commandBuffer, const VkDescriptorSet* sets, U32 size);
+        void Bind(const VkCommandBuffer& commandBuffer) const;
+        void BindDescriptorSets(const VkCommandBuffer& commandBuffer, const VkDescriptorSet* sets, U32 size) const;
         const std::vector<VkDescriptorSetLayout>& GetDescriptorSetLayouts() const { return m_DescriptorSetLayouts; }
-        void PushConstantData(const VkCommandBuffer& commandBuffer, PipelineStage stage, const void* data, U32 size, U32 offset);
+        void PushConstantData(const VkCommandBuffer& commandBuffer, PipelineStage stage, const void* data, U32 size, U32 offset) const;
+
+        std::vector<VkDescriptorSet> AllocateDescriptorSets() const;
+
+        const std::vector<ReflectionData>& GetReflectionData() const { return m_ReflectionData; }
 
     private:
-
-        struct DescriptorSetLayoutData {
-
-            U32                                       SetNumber;
-            VkDescriptorSetLayoutCreateInfo           CreateInfo;
-            std::vector<VkDescriptorSetLayoutBinding> Bindings;
-        };
-
-
-        struct ReflectionData {
-
-            VkShaderStageFlagBits                Stage;
-            std::vector<VkPushConstantRange>     PushConstantRanges;
-            std::vector<DescriptorSetLayoutData> DescriptorSetLayoutData;
-
-            ReflectionData() = default;
-
-            ReflectionData(ReflectionData&& other) noexcept {
-
-                Stage = other.Stage;
-                PushConstantRanges = std::move(other.PushConstantRanges);
-                DescriptorSetLayoutData = std::move(other.DescriptorSetLayoutData);
-            }
-        };
-
-        std::vector<BYTE> ShaderSource(const std::string_view& filename);
-
-        GraphicsPipeline::ReflectionData GetSPIRVReflection(const std::vector<BYTE>& code);
-
+        void CreateDescriptorPool();
         void CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfos);
         void CreatePipelineLayout(const std::vector<VkPushConstantRange>& ranges);
 
+        std::vector<BYTE> ShaderSource(const std::string_view& filename);
+
         VkShaderModule CreateShader(const std::vector<BYTE>& code);
         void DestroyShader(VkShaderModule& shader);
+
+        ReflectionData GetSPIRVReflection(const std::vector<BYTE>& code);
 
         void CreatePipeline(const GraphicsPipelineCreateInfo& info, std::vector<VkPipelineShaderStageCreateInfo>& stageInfos);
     };

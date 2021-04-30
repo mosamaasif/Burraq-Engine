@@ -7,8 +7,8 @@ namespace BRQ {
     class Skybox {
 
     private:
-        F32  m_Size;
-        Mesh m_SkyboxMesh;
+        F32         m_Size;
+        Mesh        m_SkyboxMesh;
 
     public:
         Skybox();

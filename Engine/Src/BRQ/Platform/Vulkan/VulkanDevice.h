@@ -2,8 +2,6 @@
 
 #include "VulkanHelpers.h"
 
-#define FRAME_LAG   3
-
 namespace BRQ {
 
     class VulkanDevice {
@@ -64,6 +62,11 @@ namespace BRQ {
         const VkSurfaceCapabilitiesKHR GetSurfaceCapabilities() const { return VK::GetSurfaceCapabilities(m_PhysicalDevice, m_Surface); }
 
         U32 GetSurfaceImageCount() const { return m_ImageCount; }
+
+        bool IsAnisotropyEnabled() const { return m_SamplerAnisotropyEnabled; }
+        F32 MaxAnisotropy() const { return m_SamplerMaxAnisotropy; }
+
+        void WaitDeviceIdle() const;
 
     private:
         void CreateVulkanInstance();

@@ -1,8 +1,8 @@
 #include <BRQ.h>
 
-#include "GraphicsPipeline.h"
-#include <spirv_reflect.h>
+#include <SPIR-V-Cross/spirv_reflect.hpp>
 
+#include "GraphicsPipeline.h"
 #include "Platform/Vulkan/RenderContext.h"
 
 namespace BRQ {
@@ -61,6 +61,8 @@ namespace BRQ {
 
                 CreateDescriptorSetLayout(reflection.DescriptorSetLayoutData[j].CreateInfo);
             }
+
+            m_ReflectionData.push_back(std::move(reflection));
         }
 
         CreatePipelineLayout(ranges);
@@ -70,34 +72,51 @@ namespace BRQ {
 
             DestroyShader(pipelineStages[i].module);
         }
+
+        CreateDescriptorPool();
     }
 
     void GraphicsPipeline::Destroy() {
 
-        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = RenderContext::GetInstance()->GetVulkanDevice();
+
+        VK::DestoryDescriptorPool(device.GetDevice(), m_DescriptorPool);
 
         for (U64 i = 0; i < m_DescriptorSetLayouts.size(); i++) {
 
-            VK::DestoryDescriptorSetLayout(context->GetDevice(), m_DescriptorSetLayouts[i]);
+            VK::DestoryDescriptorSetLayout(device.GetDevice(), m_DescriptorSetLayouts[i]);
         }
 
-        VK::DestroyPipelineLayout(context->GetDevice(), m_Layout);
-        VK::DestroyGraphicsPipeline(context->GetDevice(), m_Pipeline);
+        VK::DestroyPipelineLayout(device.GetDevice(), m_Layout);
+        VK::DestroyGraphicsPipeline(device.GetDevice(), m_Pipeline);
     }
 
-    void GraphicsPipeline::Bind(const VkCommandBuffer& commandBuffer) {
+    void GraphicsPipeline::Bind(const VkCommandBuffer& commandBuffer) const {
 
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Pipeline);
     }
 
-    void GraphicsPipeline::BindDescriptorSets(const VkCommandBuffer& commandBuffer, const VkDescriptorSet* sets, U32 size) {
+    void GraphicsPipeline::BindDescriptorSets(const VkCommandBuffer& commandBuffer, const VkDescriptorSet* sets, U32 size) const {
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, m_Layout, 0, size, sets, 0, nullptr);
     }
 
-    void GraphicsPipeline::PushConstantData(const VkCommandBuffer& commandBuffer, PipelineStage stage, const void* data, U32 size, U32 offset) {
+    void GraphicsPipeline::PushConstantData(const VkCommandBuffer& commandBuffer, PipelineStage stage, const void* data, U32 size, U32 offset) const {
 
         vkCmdPushConstants(commandBuffer, m_Layout, (VkShaderStageFlags)stage, offset, size, data);
+    }
+
+    std::vector<VkDescriptorSet> GraphicsPipeline::AllocateDescriptorSets() const {
+
+        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
+
+        VK::DescriptorSetAllocateInfo info = {};
+        info.DescriptorPool = m_DescriptorPool;
+        info.DescriptorSetCount = (U32)m_DescriptorSetLayouts.size();
+        info.SetLayouts = m_DescriptorSetLayouts.data();
+
+        return std::move(VK::AllocateDescriptorSets(device.GetDevice(), info));
     }
 
     std::vector<BYTE> GraphicsPipeline::ShaderSource(const std::string_view& filename) {
@@ -127,121 +146,39 @@ namespace BRQ {
         return source;
     }
 
-    GraphicsPipeline::ReflectionData GraphicsPipeline::GetSPIRVReflection(const std::vector<BYTE>& code) {
+    ReflectionData GraphicsPipeline::GetSPIRVReflection(const std::vector<BYTE>& code) {
+
+        ReflectionData out = {};
        
-        // this is pretty BAD and NOT Optimized neither i care for this block of code;
 
-        GraphicsPipeline::ReflectionData out = {};
-
-        SpvReflectShaderModule reflectModule;
-        SpvReflectResult result = spvReflectCreateShaderModule(code.size(), code.data(), &reflectModule);
-
-        if (result != SPV_REFLECT_RESULT_SUCCESS) {
-
-            BRQ_CORE_FATAL("Failed to create reflection for shader");
-            return out;
-        }
-
-        out.Stage = (VkShaderStageFlagBits)reflectModule.shader_stage;
-
-        // --------------------------- DescriptorSet Reflection Data -----------------------------
-        U32 setCount = 0;
-        result = spvReflectEnumerateDescriptorSets(&reflectModule, &setCount, NULL);
-
-        // prolly allocate outside of loop but whatever
-        std::vector<SpvReflectDescriptorSet*> sets(setCount);
-        result = spvReflectEnumerateDescriptorSets(&reflectModule, &setCount, sets.data());
-
-        if (result != SPV_REFLECT_RESULT_SUCCESS) {
-
-            BRQ_CORE_FATAL("Failed to Enumerate DescriptorSets for shader");
-            return out;
-        }
-
-        out.DescriptorSetLayoutData.resize(sets.size());
-
-        for (U64 i = 0; i < sets.size(); ++i) {
-
-            const SpvReflectDescriptorSet& refSet = *(sets[i]);
-            DescriptorSetLayoutData& layout = out.DescriptorSetLayoutData[i];
-
-            layout.Bindings.resize(refSet.binding_count);
-
-            for (U32 j = 0; j < refSet.binding_count; ++j) {
-
-                const SpvReflectDescriptorBinding& refBinding = *(refSet.bindings[j]);
-                VkDescriptorSetLayoutBinding& binding = layout.Bindings[j];
-
-                binding.binding = refBinding.binding;
-                binding.descriptorType = static_cast<VkDescriptorType>(refBinding.descriptor_type);
-                binding.descriptorCount = 1;
-
-                for (U32 k = 0; k < refBinding.array.dims_count; ++k) {
-                    binding.descriptorCount *= refBinding.array.dims[k];
-                }
-                binding.stageFlags = (VkShaderStageFlagBits)(reflectModule.shader_stage);
-            }
-            layout.SetNumber = refSet.set;
-            layout.CreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-            layout.CreateInfo.bindingCount = refSet.binding_count;
-            layout.CreateInfo.pBindings = layout.Bindings.data();
-        }
-
-        // ------------------------------ PushConstant Reflection Data --------------------------
-
-        U32 PushConstantCount = 0;
-        result = spvReflectEnumeratePushConstantBlocks(&reflectModule, &PushConstantCount, NULL);
-
-        // BREH
-        std::vector<SpvReflectBlockVariable*> blocks(PushConstantCount);
-        result = spvReflectEnumeratePushConstantBlocks(&reflectModule, &PushConstantCount, blocks.data());
-
-        if (result != SPV_REFLECT_RESULT_SUCCESS) {
-
-            BRQ_CORE_FATAL("Failed to Enumerate Push Constants for shader");
-            return out;
-        }
-
-        out.PushConstantRanges.resize(blocks.size());
-
-        for (U64 i = 0; i < blocks.size(); ++i) {
-
-            const SpvReflectBlockVariable& blockVar = *(blocks[i]);
-            VkPushConstantRange& layout = out.PushConstantRanges[i];
-
-            layout.offset = blockVar.offset;
-            layout.size = blockVar.size;
-            layout.stageFlags = (VkShaderStageFlags)reflectModule.shader_stage;
-        }
-        
         return out;
     }
 
     void GraphicsPipeline::CreateDescriptorSetLayout(const VkDescriptorSetLayoutCreateInfo& createInfo) {
 
-        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = RenderContext::GetInstance()->GetVulkanDevice();
 
         VK::DescriptorSetLayoutCreateInfo info = {};
         info.BindingCount = createInfo.bindingCount;
         info.Bindings = createInfo.pBindings;
 
-        m_DescriptorSetLayouts.push_back(VK::CreateDescriptorSetLayout(context->GetDevice(), info));
+        m_DescriptorSetLayouts.push_back(VK::CreateDescriptorSetLayout(device.GetDevice(), info));
     }
 
     void GraphicsPipeline::CreatePipelineLayout(const std::vector<VkPushConstantRange>& ranges) {
 
-        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = RenderContext::GetInstance()->GetVulkanDevice();
 
         VK::PipelineLayoutCreateInfo info = {};
         info.SetLayouts = m_DescriptorSetLayouts;
         info.PushConstantRanges = ranges;
 
-        m_Layout = VK::CreatePipelineLayout(context->GetDevice(), info);
+        m_Layout = VK::CreatePipelineLayout(device.GetDevice(), info);
     }
 
     VkShaderModule GraphicsPipeline::CreateShader(const std::vector<BYTE>& code) {
 
-        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = RenderContext::GetInstance()->GetVulkanDevice();
 
         VkShaderModule shader = VK_NULL_HANDLE;
 
@@ -249,18 +186,18 @@ namespace BRQ {
         info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
         info.codeSize = code.size();
         info.pCode = (U32*)code.data();
-        VK_CHECK(vkCreateShaderModule(context->GetDevice(), &info, nullptr, &shader));
+        VK_CHECK(vkCreateShaderModule(device.GetDevice(), &info, nullptr, &shader));
 
         return shader;
     }
 
     void GraphicsPipeline::DestroyShader(VkShaderModule& shader) {
 
-        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = RenderContext::GetInstance()->GetVulkanDevice();
 
         if (shader != VK_NULL_HANDLE) {
 
-            vkDestroyShaderModule(context->GetDevice(), shader, nullptr);
+            vkDestroyShaderModule(device.GetDevice(), shader, nullptr);
             shader = VK_NULL_HANDLE;
         }
     }
@@ -268,6 +205,7 @@ namespace BRQ {
     void GraphicsPipeline::CreatePipeline(const GraphicsPipelineCreateInfo& info, std::vector<VkPipelineShaderStageCreateInfo>& stageInfos) {
 
         RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
 
         const std::vector<BufferElement>& elements = info.Layout.GetElements();
 
@@ -406,6 +344,27 @@ namespace BRQ {
         pipelineInfo.Layout = m_Layout;
         pipelineInfo.RenderPass = context->GetRenderPass();
 
-        m_Pipeline = VK::CreateGraphicsPipeline(context->GetDevice(), pipelineInfo);
+        m_Pipeline = VK::CreateGraphicsPipeline(device.GetDevice(), pipelineInfo);
+    }
+
+    void GraphicsPipeline::CreateDescriptorPool() {
+
+        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
+
+        VkDescriptorPoolSize sizes[] = {
+
+            { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 16 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 16 },
+            { VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 16 },
+            { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 16 },
+        };
+
+        VK::DescriptorPoolCreateInfo info = {};
+        info.MaxSets = 256;
+        info.PoolSizeCount = sizeof(sizes) / sizeof(sizes[0]);
+        info.PoolSizes = sizes;
+
+        m_DescriptorPool = VK::CreateDescriptorPool(device.GetDevice(), info);
     }
 }

@@ -8,6 +8,7 @@
     <ClInclude Include="Src\World\Blocks\Block.h" />
     <ClInclude Include="Src\World\Blocks\BlockData.h" />
     <ClInclude Include="Src\World\Chunks\Chunk.h" />
+    <ClInclude Include="Src\Minecraft.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Shaders\ShaderCompilerScript.bat" />

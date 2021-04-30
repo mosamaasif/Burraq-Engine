@@ -33,12 +33,13 @@ namespace BRQ {
         virtual ~Application();
 
         void Run();
-        void OnUpdate(F32 dt);
+        virtual void OnUpdate(F32 dt) = 0;
         void OnEvent(Event& event);
 
         Application* GetApplication() { return s_Application; }
 
     private:
+        void OnUpdateInternal(F32 dt);
         bool OnWindowResize(WindowResizeEvent& event);
     };
 

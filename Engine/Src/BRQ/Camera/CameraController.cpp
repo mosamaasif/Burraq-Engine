@@ -14,8 +14,7 @@ namespace BRQ {
         m_Width = (F32)width;
         m_Height = (F32)height;
 
-        glm::mat4 projection = glm::perspective(glm::radians(m_Fov), m_AspectRatio, 0.1f, 1000.0f);
-        m_Camera = Camera(projection, width, height);
+        Reset();
     }
 
     void CameraController::OnUpdate(float dt) {

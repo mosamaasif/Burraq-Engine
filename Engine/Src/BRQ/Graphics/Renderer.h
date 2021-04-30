@@ -2,12 +2,31 @@
 
 #include "Events/Event.h"
 #include "Camera/Camera.h"
-#include "Texture2D.h"
-#include "TextureCube.h"
+#include "Texture.h"
 #include "Platform/Vulkan/RenderContext.h"
 #include "GraphicsPipeline.h"
 
+#include "Material.h"
+#include "Mesh.h"
+
+#include <queue>
+
 namespace BRQ {
+
+    struct DrawData {
+
+        const Mesh&     Mesh;
+        const Material& Material;
+    };
+
+    struct SkyboxData {
+        
+        VkCommandPool                CommandPool;
+        VkCommandBuffer              CommandBuffer;
+        VkDescriptorPool             SkyboxDescriptorPool;
+        std::vector<VkDescriptorSet> SkyboxDescriptorSets;
+        bool                         Loaded;
+    };
 
     struct PerFrame {
 
@@ -27,19 +46,23 @@ namespace BRQ {
     class Renderer {
 
     private:
-        static Renderer*											s_Renderer;
+        static Renderer*           s_Renderer;
+                                   
+        const Window*              m_Window;
+        RenderContext*             m_RenderContext;
+                                   
+        Texture*                   m_Texture2D;
+        Texture*                   m_TextureCube;
+                                   
+        GraphicsPipeline           m_Pipeline;
+        GraphicsPipeline           m_Skybox;
+                                   
+        PerFrame                   m_PerFrameData[FRAME_LAG];
+        std::vector<VkFramebuffer> m_Framebuffers;
 
-        const Window*												m_Window;
-        RenderContext*                                              m_RenderContext;
-        
-        Texture2D*                                                  m_Texture2D;
-        TextureCube*                                                m_TextureCube;
+        std::queue<DrawData>       m_RenderQueue;
 
-        GraphicsPipeline                                            m_Pipeline;
-        GraphicsPipeline                                            m_Skybox;
-
-        PerFrame                                                    m_PerFrameData[FRAME_LAG];
-        std::vector<VkFramebuffer>                                  m_Framebuffers;
+        Camera                     m_Camera;
 
     protected:
         Renderer();
@@ -53,12 +76,16 @@ namespace BRQ {
 
         static Renderer* GetInstance() { return s_Renderer;  }
 
+        void Submit(DrawData data);
+
         void BeginScene(const Camera& camera);
+        void Draw();
         void EndScene();
 
-        //void Submit();
+        void SubmitSkybox();
 
-        void Present();
+        void PrepareFrame();
+        void EndFrame();
 
     private:
         void InitInternal(const Window* window);
@@ -90,7 +117,6 @@ namespace BRQ {
         void CreateTexture();
         void DestroyTexture();
 
-        void CreateSkybox();
-        void DestroySkybox();
+        void Present();
     };
 }

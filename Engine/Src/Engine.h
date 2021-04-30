@@ -14,7 +14,10 @@
 #include "BRQ/Application/Input.h"
 #include "BRQ/Application/Keys.h"
 
+#include "BRQ/Graphics/GraphicsPipeline.h"
 #include "BRQ/Graphics/Renderer.h"
 #include "BRQ/Graphics/Mesh.h"
+#include "BRQ/Graphics/Material.h"
+#include "BRQ/Graphics/Texture.h"
 
 #include "BRQ/Application/EntryPoint.h"

@@ -42,9 +42,13 @@ namespace BRQ {
         BufferLayout();
         ~BufferLayout() = default;
 
-        void PushElement(ElementType type, U32 size);
+        void PushElement(ElementType type);
 
         const std::vector<BufferElement>& GetElements() const { return m_Elements; };
         U64 GetStride() const { return m_Stride; }
+
+    private:
+
+        U32 GetElementTypeSize(ElementType type);
     };
 }

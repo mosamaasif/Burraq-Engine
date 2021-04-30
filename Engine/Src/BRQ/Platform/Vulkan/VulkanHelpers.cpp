@@ -1104,6 +1104,21 @@ namespace BRQ { namespace VK {
         return std::move(sets);
     }
 
+    VkDescriptorSet AllocateDescriptorSet(const VkDevice& device, const DescriptorSetAllocateInfo& info) {
+
+        VkDescriptorSet set = VK_NULL_HANDLE;
+
+        VkDescriptorSetAllocateInfo createInfo = {};
+        createInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+        createInfo.descriptorPool = info.DescriptorPool;
+        createInfo.descriptorSetCount = info.DescriptorSetCount;
+        createInfo.pSetLayouts = info.SetLayouts;
+
+        VK_CHECK(vkAllocateDescriptorSets(device, &createInfo, &set));
+
+        return set;
+    }
+
     void ImageLayoutTransition(const ImageLayoutTransitionInfo info) {
 
         VkImageMemoryBarrier barrier = {};

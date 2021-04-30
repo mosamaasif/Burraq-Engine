@@ -29,7 +29,6 @@ namespace BRQ {
 
         m_CameraController = CameraController(m_Window->GetWidth(), m_Window->GetHeight(), 80.0f);
         m_Minimized = false;
-
     }
 
     Application::~Application() {
@@ -66,16 +65,14 @@ namespace BRQ {
 
             if (!m_Minimized) {
 
-                OnUpdate(dt);
+                OnUpdateInternal(dt);
             }
 
             m_Window->OnUpdate();
         }
     }
-
-    void Application::OnUpdate(F32 dt) {
-
-        m_CameraController.OnUpdate(dt);
+ 
+    void Application::OnUpdateInternal(F32 dt) {
 
         if (m_InputManager->IsKeyPressed(Key::KEY_T)) {
 
@@ -91,18 +88,17 @@ namespace BRQ {
             m_CameraController.Reset();
         }
 
-        if (!m_Minimized) {
+        m_CameraController.OnUpdate(dt);
 
-            m_Renderer->BeginScene(m_CameraController.GetCamera());
+        OnUpdate(dt);
 
-            // draw here
+        m_Renderer->BeginScene(m_CameraController.GetCamera());
 
-            m_Renderer->EndScene();
+        m_Renderer->Draw();
 
-            m_Renderer->Present();
-        }
+        m_Renderer->EndScene();
     }
-    
+
     bool Application::OnWindowResize(WindowResizeEvent& event) {
 
         m_CameraController.OnEvent(event);

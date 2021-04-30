@@ -1,36 +1,54 @@
 #include <BRQ.h>
-#include "TextureCube.h"
+
+#include "Texture.h"
 #include "Platform/Vulkan/RenderContext.h"
 
 #pragma warning(disable: 6011 26819 6308 28182 6262)  
+#define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #pragma warning(default: 6011 26819 6308 28182 6262)  
 
 namespace BRQ {
 
-    TextureCube::TextureCube()
-        : m_Sampler(VK_NULL_HANDLE) { }
+    Texture::Texture() {
 
-    TextureCube::TextureCube(const std::vector<std::string_view>& filenames) {
-
-        LoadTexture(filenames);
+        m_Image = {};
+        m_ImageView = {};
+        m_Sampler = VK_NULL_HANDLE;
+        m_Width = 0;
+        m_Height = 0;
+        m_Loaded = false;
     }
 
-    TextureCube::~TextureCube() {
-        
-        auto context = RenderContext::GetInstance();
+    Texture::Texture(const TextureCreateInfo& info) {
 
-        VK::DestroyImageView(context->GetDevice(), m_ImageView);
+        LoadTexture(info);
+    }
+
+    Texture::~Texture() {
+        
+        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
+
+        VK::DestroyImageView(device.GetDevice(), m_ImageView);
         VK::DestroyImage(m_Image);
 
         DestroySampler();
     }
 
-    void TextureCube::LoadTexture(const std::vector<std::string_view>& filenames) {
+    void Texture::LoadTexture(const TextureCreateInfo& info) {
 
-        BRQ_ASSERT(filenames.size() == 6);
+        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
 
-        std::vector<stbi_uc*> imageData(filenames.size());
+        if (info.Type == TextureType::Texture2D) {
+
+            BRQ_ASSERT(info.Files.size() == 1);
+        }
+        else if (info.Type == TextureType::TextureCube) {
+
+            BRQ_ASSERT(info.Files.size() == 6)
+        }
 
         I32 width = 0;
         I32 height = 0;
@@ -38,24 +56,46 @@ namespace BRQ {
 
         stbi_set_flip_vertically_on_load(true);
 
-        auto vma = VulkanMemoryAllocator::GetInstance();
-        auto context = RenderContext::GetInstance();
+        std::vector<stbi_uc*> imageData(info.Files.size());
 
-        for (U64 i = 0; i < filenames.size(); i++) {
+        for (U64 i = 0; i < imageData.size(); i++) {
 
-            stbi_uc* image = stbi_load(filenames[i].data(), &width, &height, &channels, STBI_rgb_alpha);
+            I32 h = 0;
+            I32 w = 0;
+
+            stbi_uc* image = stbi_load(info.Files[i].data(), &w, &h, &channels, STBI_rgb_alpha);
 
             if (!image) {
 
-                BRQ_CORE_FATAL("Can't load Texture: {}", filenames[i].data());
+                BRQ_CORE_FATAL("Can't load Texture: {}", info.Files[i].data());
                 return;
             }
+
+            // checks if this is not first image
+            if (i != 0) {
+
+                // if its not first then we check if all images have same size
+
+                if (w != width && h != height) {
+
+                    BRQ_ASSERT(false);
+                    BRQ_FATAL("All Images should have same size: {}", info.Files[i].data());
+                }
+            }
+            
+            width = w;
+            height = h;
 
             imageData[i] = image;
         }
 
-        VkDeviceSize imageSize = width * height * 4 * filenames.size();
-        VkDeviceSize layerSize = imageSize / filenames.size();
+        m_Width = width;
+        m_Height = height;
+
+        VkDeviceSize imageSize = width * height * 4 * info.Files.size();
+        VkDeviceSize layerSize = imageSize / info.Files.size();
+
+        auto vma = VulkanMemoryAllocator::GetInstance();
 
         VK::BufferCreateInfo bufferInfo = {};
         bufferInfo.Size = imageSize;
@@ -73,36 +113,40 @@ namespace BRQ {
             memcpy_s((void*)mem, layerSize, imageData[i], layerSize);
         }
 
-        vma->UnMapMemory(buffer);        
-        
+        vma->UnMapMemory(buffer);
+
         VK::ImageCreateInfo imageInfo = {};
         imageInfo.ImageType = VK_IMAGE_TYPE_2D;
-        imageInfo.Flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
         imageInfo.Format = VK_FORMAT_R8G8B8A8_UNORM;
         imageInfo.Extent = { (U32)width, (U32)height, 1U };
         imageInfo.MipLevels = 1;
-        imageInfo.ArrayLayers = 6;
         imageInfo.Samples = VK_SAMPLE_COUNT_1_BIT;
         imageInfo.Tiling = VK_IMAGE_TILING_OPTIMAL;
         imageInfo.Usage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
         imageInfo.SharingMode = VK_SHARING_MODE_EXCLUSIVE;
         imageInfo.InitialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
         imageInfo.MemoryUsage = VMA_MEMORY_USAGE_GPU_ONLY;
+        imageInfo.ArrayLayers = (U32)imageData.size();
+
+        if (info.Type == TextureType::TextureCube) {
+
+            imageInfo.Flags = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+        }
 
         m_Image = VK::CreateImage(imageInfo);
 
         VK::CommandPoolCreateInfo poolInfo = {};
         poolInfo.Flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT;
-        poolInfo.QueueFamilyIndex = context->GetGraphicsQueueIndex();
+        poolInfo.QueueFamilyIndex = device.GetGraphicsQueueIndex();
 
-        VkCommandPool pool = VK::CreateCommandPool(context->GetDevice(), poolInfo);
+        VkCommandPool pool = VK::CreateCommandPool(device.GetDevice(), poolInfo);
 
         VK::CommandBufferAllocateInfo allocateInfo = {};
         allocateInfo.CommandPool = pool;
         allocateInfo.Level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
         allocateInfo.CommandBufferCount = 1;
 
-        auto cmd = VK::AllocateCommandBuffers(context->GetDevice(), allocateInfo);
+        auto cmd = VK::AllocateCommandBuffers(device.GetDevice(), allocateInfo);
 
         VK::CommandBufferBeginInfo beginInfo = {};
         beginInfo.CommandBuffer = cmd[0];
@@ -138,14 +182,16 @@ namespace BRQ {
         transition.SubresourceRange.levelCount = 1;
         transition.SubresourceRange.layerCount = (U32)imageData.size();
 
+
         VK::ImageLayoutTransition(transition);
 
         vkCmdCopyBufferToImage(cmd[0], buffer.Buffer,
             m_Image.Image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
             (U32)bufferCopyRegions.size(), bufferCopyRegions.data());
- 
+
         transition.OldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         transition.NewLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+
         VK::ImageLayoutTransition(transition);
 
         VK::CommandBufferEnd(cmd[0]);
@@ -153,39 +199,46 @@ namespace BRQ {
         VK::QueueSubmitInfo submitInfo = {};
         submitInfo.CommandBufferCount = 1;
         submitInfo.CommandBuffers = &cmd[0];
-        submitInfo.Queue = context->GetGraphicsQueue();
+        submitInfo.Queue = device.GetGraphicsQueue();
 
         VK::QueueSubmit(submitInfo);
-        VK::QueueWaitIdle(context->GetGraphicsQueue());
+        VK::QueueWaitIdle(device.GetGraphicsQueue());
 
-        VK::DestroyCommandPool(context->GetDevice(), pool);
+        VK::DestroyCommandPool(device.GetDevice(), pool);
         VK::DestoryBuffer(buffer);
-
-        for (U32 i = 0; i < imageData.size(); i++) {
-
-            stbi_image_free(imageData[i]);
-        }
 
         VK::ImageViewCreateInfo viewInfo = {};
         viewInfo.Image = m_Image.Image;
-        viewInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
         viewInfo.Format = imageInfo.Format;
         viewInfo.SubresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         viewInfo.SubresourceRange.baseMipLevel = 0;
         viewInfo.SubresourceRange.levelCount = 1;
         viewInfo.SubresourceRange.baseArrayLayer = 0;
-        viewInfo.SubresourceRange.layerCount = 6;
+        viewInfo.SubresourceRange.layerCount = (U32)imageData.size();
 
-        m_ImageView = VK::CreateImageView(context->GetDevice(), viewInfo);
+        if (info.Type == TextureType::Texture2D) {
+
+            viewInfo.ViewType = VK_IMAGE_VIEW_TYPE_2D;
+        }
+        else if (info.Type == TextureType::TextureCube) {
+        
+            viewInfo.ViewType = VK_IMAGE_VIEW_TYPE_CUBE;
+        }
+
+        m_ImageView = VK::CreateImageView(device.GetDevice(), viewInfo);
 
         CreateSampler();
+
+        for (U32 i = 0; i < imageData.size(); i++) {
+
+            stbi_image_free(imageData[i]);
+        }
     }
 
-    void TextureCube::CreateSampler() {
+    void Texture::CreateSampler() {
 
-        auto context = RenderContext::GetInstance();
-
-        VkPhysicalDeviceProperties properties = VK::GetPhysicalDeviceProperties(context->GetPhysicalDevice());
+        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
 
         VK::SamplerCreateInfo info = {};
         info.MagFilter = VK_FILTER_LINEAR;
@@ -193,22 +246,28 @@ namespace BRQ {
         info.AddressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         info.AddressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
         info.AddressModeW = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
-        info.AnisotropyEnable = VK_TRUE;
-        info.MaxAnisotropy = properties.limits.maxSamplerAnisotropy;
+
+        if (device.IsAnisotropyEnabled()) {
+
+            info.AnisotropyEnable = VK_TRUE;
+            info.MaxAnisotropy = device.MaxAnisotropy();
+        }
+
         info.BorderColor = VK_BORDER_COLOR_FLOAT_OPAQUE_WHITE;
         info.UnnormalizedCoordinates = VK_FALSE;
         info.CompareEnable = VK_FALSE;
         info.CompareOp = VK_COMPARE_OP_NEVER;
         info.MipmapMode = VK_SAMPLER_MIPMAP_MODE_LINEAR;
 
-        m_Sampler = VK::CreateSampler(context->GetDevice(), info);
+        m_Sampler = VK::CreateSampler(device.GetDevice(), info);
     }
 
-    void TextureCube::DestroySampler() {
+    void Texture::DestroySampler() {
 
-        auto context = RenderContext::GetInstance();
+        RenderContext* context = RenderContext::GetInstance();
+        const VulkanDevice& device = context->GetVulkanDevice();
 
-        VK::DestroySampler(context->GetDevice(), m_Sampler);
+        VK::DestroySampler(device.GetDevice(), m_Sampler);
     }
 
 }

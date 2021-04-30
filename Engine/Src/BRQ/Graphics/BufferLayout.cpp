@@ -30,16 +30,37 @@ namespace BRQ {
         m_Stride = 0;
     }
 
-    void BufferLayout::PushElement(ElementType type, U32 size) {
+    void BufferLayout::PushElement(ElementType type) {
 
         BufferElement element;
         element.Type = type;
-        element.Size = size;
+        element.Size = GetElementTypeSize(type);
         element.Offset = (U32)m_Stride;
 
         m_Elements.push_back(element);
 
-        m_Stride += size;
+        m_Stride += element.Size;
+    }
+
+    U32 BufferLayout::GetElementTypeSize(ElementType type) {
+
+        switch (type) {
+
+        case ElementType::Byte:   return sizeof(I8);
+        case ElementType::UByte:  return sizeof(U8);
+        case ElementType::Short:  return sizeof(I16);
+        case ElementType::UShort: return sizeof(U16);
+        case ElementType::Int:    return sizeof(I32);
+        case ElementType::UInt:   return sizeof(U32);
+        case ElementType::Long:   return sizeof(I64);
+        case ElementType::ULong:  return sizeof(U64);
+        case ElementType::Float:  return sizeof(F32);
+        case ElementType::Double: return sizeof(F64);
+        case ElementType::Vec2:   return (sizeof(F32) * 2);
+        case ElementType::Vec3:   return (sizeof(F32) * 3);
+        case ElementType::Vec4:   return (sizeof(F32) * 4);
+        }
+        return 0;
     }
 }
 

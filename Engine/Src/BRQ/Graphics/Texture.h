@@ -4,7 +4,19 @@
 
 namespace BRQ {
 
-    class Texture2D {
+    enum class TextureType {
+
+        Texture2D   = 0,
+        TextureCube = VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,
+    };
+
+    struct TextureCreateInfo {
+
+        TextureType                   Type;
+        std::vector<std::string_view> Files;
+    };
+
+    class Texture {
 
     private:
         VK::Image     m_Image;
@@ -12,21 +24,21 @@ namespace BRQ {
         VkSampler     m_Sampler;
         U32           m_Width;
         U32           m_Height;
+        bool          m_Loaded;
 
     public:
-        Texture2D();
-        Texture2D(const std::string_view& filename);
-        ~Texture2D();
+        Texture();
+        Texture(const TextureCreateInfo& info);
+        ~Texture();
 
         VK::ImageView GetImageView() const { return m_ImageView; };
-
         VkSampler GetSampler() const { return m_Sampler; }
 
         U32 GetTextureWidth() const { return m_Width; }
         U32 GetTextureHeight() const { return m_Height; }
 
-        void LoadTexture(const std::string_view& filename);
-
+        void LoadTexture(const TextureCreateInfo& info);
+        
     private:
         void CreateSampler();
         void DestroySampler();

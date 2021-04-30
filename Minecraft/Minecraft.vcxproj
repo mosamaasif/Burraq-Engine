@@ -126,6 +126,7 @@
       <LanguageStandard_C>stdc17</LanguageStandard_C>
       <AdditionalIncludeDirectories>$(SolutionDir)Engine\ThirdParty\GLM\include\;$(SolutionDir)Engine\ThirdParty\GLFW\include\;$(SolutionDir)Engine\ThirdParty\VulkanMemoryAllocator\include\;$(VULKAN_SDK)\Include\;$(SolutionDir)Engine\Src\BRQ\;$(SolutionDir)Engine\Src\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
+      <DisableSpecificWarnings>26812;26495;26451;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -161,6 +162,7 @@ exit</Command>
       <OmitFramePointers>true</OmitFramePointers>
       <EnableEnhancedInstructionSet>StreamingSIMDExtensions2</EnableEnhancedInstructionSet>
       <FloatingPointModel>Fast</FloatingPointModel>
+      <DisableSpecificWarnings>26812;26495;26451;</DisableSpecificWarnings>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
@@ -185,6 +187,7 @@ exit</Command>
     <ClCompile Include="Src\Minecraft.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="Src\Minecraft.h" />
     <ClInclude Include="Src\World\Blocks\Block.h" />
     <ClInclude Include="Src\World\Blocks\BlockData.h" />
     <ClInclude Include="Src\World\Chunks\Chunk.h" />

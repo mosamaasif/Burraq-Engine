@@ -44,6 +44,11 @@ namespace BRQ {
         DestroyVulkanInstance();
     }
 
+    void VulkanDevice::WaitDeviceIdle() const {
+
+        VK_CHECK(vkDeviceWaitIdle(m_Device));
+    }
+
     void VulkanDevice::CreateVulkanInstance() {
 
         VK::InstanceCreateInfo info = {};

@@ -453,8 +453,8 @@ namespace BRQ { namespace VK {
     VkDescriptorPool CreateDescriptorPool(const VkDevice& device, const DescriptorPoolCreateInfo& info = {});
     void DestoryDescriptorPool(const VkDevice& device, VkDescriptorPool& pool);
 
-    // TODO change this for dynamic descriptor sets
     std::vector<VkDescriptorSet> AllocateDescriptorSets(const VkDevice& device, const DescriptorSetAllocateInfo& info = {});
+    VkDescriptorSet AllocateDescriptorSet(const VkDevice& device, const DescriptorSetAllocateInfo& info = {});
 
     void ImageLayoutTransition(const ImageLayoutTransitionInfo info = {});
 

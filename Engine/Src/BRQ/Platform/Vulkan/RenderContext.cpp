@@ -174,7 +174,7 @@ namespace BRQ {
         depth.FinalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         VK::AttachmentDescription color = {};
-        color.Format = GetSwapchainImageFormat();
+        color.Format = m_Device.GetSurfaceFormat().format;
         color.Samples = VK_SAMPLE_COUNT_1_BIT;
         color.LoadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
         color.StoreOp = VK_ATTACHMENT_STORE_OP_STORE;
