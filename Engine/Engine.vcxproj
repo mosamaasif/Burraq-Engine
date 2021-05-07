@@ -62,7 +62,7 @@
       <PreprocessorDefinitions>BRQ_DEBUG;DEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\SPIRV-Cross\include;$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\SPIRV-Reflect\include;$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreadedDebug</RuntimeLibrary>
       <PrecompiledHeader>Use</PrecompiledHeader>
       <PrecompiledHeaderFile>BRQ.h</PrecompiledHeaderFile>
@@ -87,7 +87,7 @@
       <PreprocessorDefinitions>BRQ_RELEASE;NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
       <LanguageStandard>stdcpplatest</LanguageStandard>
-      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\SPIRV-Cross\include;$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)ThirdParty\SPIRV-Reflect\include;$(ProjectDir)ThirdParty\STBI\include\;$(ProjectDir)ThirdParty\GLFW\include\;$(ProjectDir)ThirdParty\GLM\include\;$(ProjectDir)ThirdParty\VulkanMemoryAllocator\include\;$(ProjectDir)ThirdParty\meshoptimizer\include\;$(VULKAN_SDK)\include\;Src\BRQ\;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <StringPooling>true</StringPooling>
       <PrecompiledHeader>Use</PrecompiledHeader>
@@ -142,17 +142,7 @@
     <ClCompile Include="Src\BRQ\Utilities\FileSystem.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\Timer.cpp" />
     <ClCompile Include="Src\BRQ\Utilities\VulkanMemoryAllocator.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cfg.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cpp.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_c.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_parsed_ir.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_util.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_glsl.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_hlsl.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_msl.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_parser.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_reflect.cpp" />
+    <ClCompile Include="ThirdParty\SPIRV-Reflect\include\spirv_reflect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\EntryPoint.h" />
@@ -195,23 +185,8 @@
     <ClInclude Include="Src\BRQ\Utilities\Types.h" />
     <ClInclude Include="Src\BRQ\Utilities\VulkanMemoryAllocator.h" />
     <ClInclude Include="ThirdParty\meshoptimizer\include\meshoptimizer.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\GLSL.std.450.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cfg.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_common.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cpp.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_c.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_containers.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_error_handling.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_parsed_ir.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_util.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_glsl.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_hlsl.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_msl.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_parser.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_reflect.hpp" />
+    <ClInclude Include="ThirdParty\SPIRV-Reflect\include\spirv.h" />
+    <ClInclude Include="ThirdParty\SPIRV-Reflect\include\spirv_reflect.h" />
     <ClInclude Include="ThirdParty\TinyObjLoader\include\tiny_obj_loader.h" />
     <ClInclude Include="ThirdParty\VulkanMemoryAllocator\include\vk_mem_alloc.h" />
   </ItemGroup>

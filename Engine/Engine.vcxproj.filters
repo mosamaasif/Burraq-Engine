@@ -26,17 +26,7 @@
     <ClCompile Include="Src\BRQ\Application\Window.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Texture.cpp" />
     <ClCompile Include="Src\BRQ\Graphics\Material.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cfg.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cpp.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_c.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_parsed_ir.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_util.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_glsl.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_hlsl.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_msl.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_parser.cpp" />
-    <ClCompile Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_reflect.cpp" />
+    <ClCompile Include="ThirdParty\SPIRV-Reflect\include\spirv_reflect.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Src\BRQ\Application\Window.h" />
@@ -81,23 +71,8 @@
     <ClInclude Include="Src\BRQ\Platform\Vulkan\VulkanCommands.h" />
     <ClInclude Include="Src\BRQ\Graphics\Texture.h" />
     <ClInclude Include="Src\BRQ\Graphics\Material.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\GLSL.std.450.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cfg.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_common.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cpp.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_c.h" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_containers.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_error_handling.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_parsed_ir.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_cross_util.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_glsl.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_hlsl.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_msl.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_parser.hpp" />
-    <ClInclude Include="ThirdParty\SPIRV-Cross\include\SPIR-V-Cross\spirv_reflect.hpp" />
+    <ClInclude Include="ThirdParty\SPIRV-Reflect\include\spirv.h" />
+    <ClInclude Include="ThirdParty\SPIRV-Reflect\include\spirv_reflect.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="Src\Shaders\ShaderCompilerScript.bat" />

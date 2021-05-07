@@ -1,6 +1,6 @@
 #include <BRQ.h>
 
-#include <SPIR-V-Cross/spirv_reflect.hpp>
+#include <spirv_reflect.h>
 
 #include "GraphicsPipeline.h"
 #include "Platform/Vulkan/RenderContext.h"
@@ -51,7 +51,6 @@ namespace BRQ {
             
             pipelineStages[i] = stageInfo;
             
-            // WHY LOL
             for (U64 j = 0; j < reflection.PushConstantRanges.size(); j++) {
 
                 ranges.push_back(reflection.PushConstantRanges[j]);
@@ -149,7 +148,85 @@ namespace BRQ {
     ReflectionData GraphicsPipeline::GetSPIRVReflection(const std::vector<BYTE>& code) {
 
         ReflectionData out = {};
-       
+
+        SpvReflectShaderModule reflectModule;
+        SpvReflectResult result = spvReflectCreateShaderModule(code.size(), code.data(), &reflectModule);
+
+        if (result != SPV_REFLECT_RESULT_SUCCESS) {
+
+            BRQ_CORE_FATAL("Failed to create reflection for shader");
+            return out;
+        }
+
+        out.Stage = (VkShaderStageFlagBits)reflectModule.shader_stage;
+
+        // --------------------------- DescriptorSet Reflection Data -----------------------------
+        U32 setCount = 0;
+        result = spvReflectEnumerateDescriptorSets(&reflectModule, &setCount, NULL);
+
+        std::vector<SpvReflectDescriptorSet*> sets(setCount);
+        result = spvReflectEnumerateDescriptorSets(&reflectModule, &setCount, sets.data());
+
+        if (result != SPV_REFLECT_RESULT_SUCCESS) {
+
+            BRQ_CORE_FATAL("Failed to Enumerate DescriptorSets for shader");
+            return out;
+        }
+
+        out.DescriptorSetLayoutData.resize(sets.size());
+
+        for (U64 i = 0; i < sets.size(); ++i) {
+
+            const SpvReflectDescriptorSet& refSet = *(sets[i]);
+            DescriptorSetLayoutData& layout = out.DescriptorSetLayoutData[i];
+
+            layout.Bindings.resize(refSet.binding_count);
+
+            for (U32 j = 0; j < refSet.binding_count; ++j) {
+
+                const SpvReflectDescriptorBinding& refBinding = *(refSet.bindings[j]);
+                VkDescriptorSetLayoutBinding& binding = layout.Bindings[j];
+
+                binding.binding = refBinding.binding;
+                binding.descriptorType = static_cast<VkDescriptorType>(refBinding.descriptor_type);
+                binding.descriptorCount = 1;
+
+                for (U32 k = 0; k < refBinding.array.dims_count; ++k) {
+                    binding.descriptorCount *= refBinding.array.dims[k];
+                }
+                binding.stageFlags = (VkShaderStageFlagBits)(reflectModule.shader_stage);
+            }
+            layout.SetNumber = refSet.set;
+            layout.CreateInfo.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+            layout.CreateInfo.bindingCount = refSet.binding_count;
+            layout.CreateInfo.pBindings = layout.Bindings.data();
+        }
+
+        // ------------------------------ PushConstant Reflection Data --------------------------
+
+        U32 PushConstantCount = 0;
+        result = spvReflectEnumeratePushConstantBlocks(&reflectModule, &PushConstantCount, NULL);
+
+        std::vector<SpvReflectBlockVariable*> blocks(PushConstantCount);
+        result = spvReflectEnumeratePushConstantBlocks(&reflectModule, &PushConstantCount, blocks.data());
+
+        if (result != SPV_REFLECT_RESULT_SUCCESS) {
+
+            BRQ_CORE_FATAL("Failed to Enumerate Push Constants for shader");
+            return out;
+        }
+
+        out.PushConstantRanges.resize(blocks.size());
+
+        for (U64 i = 0; i < blocks.size(); ++i) {
+
+            const SpvReflectBlockVariable& blockVar = *(blocks[i]);
+            VkPushConstantRange& layout = out.PushConstantRanges[i];
+
+            layout.offset = blockVar.offset;
+            layout.size = blockVar.size;
+            layout.stageFlags = (VkShaderStageFlags)reflectModule.shader_stage;
+        }
 
         return out;
     }

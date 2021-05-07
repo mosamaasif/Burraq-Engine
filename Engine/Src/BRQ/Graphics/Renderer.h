@@ -8,7 +8,7 @@
 
 #include "Material.h"
 #include "Mesh.h"
-
+#include "Skybox.h"
 #include <queue>
 
 namespace BRQ {
@@ -19,15 +19,6 @@ namespace BRQ {
         const Material& Material;
     };
 
-    struct SkyboxData {
-        
-        VkCommandPool                CommandPool;
-        VkCommandBuffer              CommandBuffer;
-        VkDescriptorPool             SkyboxDescriptorPool;
-        std::vector<VkDescriptorSet> SkyboxDescriptorSets;
-        bool                         Loaded;
-    };
-
     struct PerFrame {
 
         VkCommandPool                CommandPool;
@@ -36,11 +27,6 @@ namespace BRQ {
         VkSemaphore                  ImageAvailableSemaphore;
         VkSemaphore                  RenderFinishedSemaphore;
         VkFence                      CommandBufferExecutedFence;
-
-        VkDescriptorPool             DescriptorPool;
-        VkDescriptorPool             SkyboxDescriptorPool;
-        std::vector<VkDescriptorSet> DescriptorSets;
-        std::vector<VkDescriptorSet> SkyboxDescriptorSets;
     };
 
     class Renderer {
@@ -51,18 +37,14 @@ namespace BRQ {
         const Window*              m_Window;
         RenderContext*             m_RenderContext;
                                    
-        Texture*                   m_Texture2D;
-        Texture*                   m_TextureCube;
-                                   
-        GraphicsPipeline           m_Pipeline;
-        GraphicsPipeline           m_Skybox;
-                                   
         PerFrame                   m_PerFrameData[FRAME_LAG];
         std::vector<VkFramebuffer> m_Framebuffers;
 
+        // make this std::vector
         std::queue<DrawData>       m_RenderQueue;
-
         Camera                     m_Camera;
+
+        const Skybox*              m_Skybox;
 
     protected:
         Renderer();
@@ -82,7 +64,7 @@ namespace BRQ {
         void Draw();
         void EndScene();
 
-        void SubmitSkybox();
+        void SubmitSkybox(const Skybox* skybox);
 
         void PrepareFrame();
         void EndFrame();
@@ -96,26 +78,11 @@ namespace BRQ {
         void CreateFramebuffers();
         void DestroyFramebuffers();
 
-        void CreateGraphicsPipeline();
-        void DestroyGraphicsPipeline();
-
-        void CreateSkyboxPipeline();
-        void DestroySkyboxPipeline();
-
         void CreateCommands();
         void DestroyCommands();
 
         void CreateSyncronizationPrimitives();
         void DestroySyncronizationPrimitives();
-
-        void CreateDescriptorPool();
-        void DestroyDescriptorPool();
-
-        void CreateDescriptorSets();
-
-        // this is temp
-        void CreateTexture();
-        void DestroyTexture();
 
         void Present();
     };

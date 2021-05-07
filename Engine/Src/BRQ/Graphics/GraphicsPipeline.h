@@ -40,9 +40,9 @@ namespace BRQ {
 
     struct DescriptorSetLayoutData {
 
-        std::string                     Name;
-        U32                             SetNumber;
-        VkDescriptorSetLayoutCreateInfo CreateInfo;
+        U32                                       SetNumber;
+        VkDescriptorSetLayoutCreateInfo           CreateInfo;
+        std::vector<VkDescriptorSetLayoutBinding> Bindings;
     };
 
     struct ReflectionData {

@@ -9,9 +9,13 @@ namespace MC {
 
     private:
         BRQ::GraphicsPipeline m_Pipeline;
-        BRQ::Texture          m_Texture;
-        BRQ::Material         m_Material;
-        BRQ::Mesh             m_Mesh;
+        BRQ::Material         m_BoxMaterial;
+        BRQ::Material         m_LionMaterial;
+        BRQ::Texture          m_BoxTexture;
+        BRQ::Texture          m_LionTexture;
+        BRQ::Mesh             m_BoxMesh;
+        BRQ::Mesh             m_LionMesh;
+        BRQ::Skybox           m_Skybox;
 
     public:
         Minecraft() = default;
