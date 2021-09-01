@@ -1,2 +1,2 @@
 # Burraq Engine
-A RTX engine implemented in Vulkan API
+A Game Engine implemented in Vulkan API
