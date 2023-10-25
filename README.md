@@ -1,2 +1,2 @@
 # Burraq Engine
-A Game Engine implemented in Vulkan API
+A Very Barebone (WIP) Game Engine implemented in Vulkan API
